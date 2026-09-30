@@ -8,7 +8,7 @@ Naluri (Indonesian for *instinct*; **N**eural **A**nswering via **L**abel **U**n
 state:  {"message": "Kak, barangnya baru sampai tapi layarnya retak. Tolong kirim unit pengganti ya,
                      saya butuh buat kerja besok.",
          "order": {"id": "INV-2291", "item": "Monitor 24 inch", "status": "delivered", "paid": true}}
-        (Indonesian: "The item just arrived but the screen is cracked. Please send a replacement unit,
+        (English translation: "The item just arrived but the screen is cracked. Please send a replacement unit,
          I need it for work tomorrow.")
 
 intent     choice  What does the customer want?    replacement 0.56 · product_question 0.30 · refund 0.09 · track_order 0.06
