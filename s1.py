@@ -91,12 +91,25 @@ def collate(items, pad_id):
 
 
 def load(path, device="cuda"):
-    """Load a trained checkpoint dir written by train.py."""
+    """Load a checkpoint dir: from train.py (scorer.pt / temperature.pt) or an export (head.safetensors)."""
+    from pathlib import Path
     tok = AutoTokenizer.from_pretrained(path)
     model = SystemOne(path)
-    model.scorer.load_state_dict(torch.load(f"{path}/scorer.pt", map_location="cpu"))
-    model.temperature.copy_(torch.load(f"{path}/temperature.pt", map_location="cpu"))
-    return tok, model.to(device).eval()
+    if (Path(path) / "head.safetensors").exists():
+        from safetensors.torch import load_file
+        head = load_file(f"{path}/head.safetensors")
+        model.scorer.load_state_dict({k.removeprefix("scorer."): v for k, v in head.items() if k.startswith("scorer.")})
+        model.temperature.copy_(head["temperature"])
+    else:
+        model.scorer.load_state_dict(torch.load(f"{path}/scorer.pt", map_location="cpu"))
+        model.temperature.copy_(torch.load(f"{path}/temperature.pt", map_location="cpu"))
+    return tok, model.float().to(device).eval()
+
+
+def from_pretrained(repo_id="jerichosiahaya/naluri-xlmr-base", device="cpu"):
+    """Download a published Naluri model from the Hugging Face Hub and load it."""
+    from huggingface_hub import snapshot_download
+    return load(snapshot_download(repo_id), device=device)
 
 
 @torch.no_grad()

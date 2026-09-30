@@ -13,3 +13,4 @@ runs/
 .env
 logs/
 results/jev_cache.jsonl
+hf/

@@ -12,6 +12,8 @@ answer:    negative 0.80   neutral 0.16   positive 0.04
 
 It speaks the same three question types as TypeSafe Jev and Laya: `noul` (yes/no), `choice` (pick one) and `score` (an ordered scale).
 
+🤗 **Weights:** [jerichosiahaya/naluri-xlmr-base](https://huggingface.co/jerichosiahaya/naluri-xlmr-base) (M4, CC BY-NC 4.0)
+
 ## Results at a glance
 
 All numbers were measured in this repo (single runs). Jev was called live through its API with the same questions. Details, per-language results and caveats are in [REPORT.md](REPORT.md).
@@ -40,7 +42,15 @@ git clone https://github.com/jerichosiahaya/naluri && cd naluri
 uv sync
 ```
 
-Model weights are not in the repo yet, so train a model first (see *Reproduce*). Then:
+Load the published model straight from Hugging Face:
+
+```python
+import s1
+tok, model = s1.from_pretrained("jerichosiahaya/naluri-xlmr-base", device="cpu")   # or "cuda"
+s1.predict(tok, model, "Pesanan saya belum sampai!", {"urgent": {"type": "noul", "instructions": "Is this urgent?"}}, device="cpu")
+```
+
+Or train your own (see *Reproduce*) and use `ask.py`:
 
 ```bash
 .venv/bin/python ask.py                                   # built-in examples, CPU
@@ -121,7 +131,7 @@ The API clients read keys from a local `.env` file, which is not committed: `JEV
 
 ## License
 
-The code is released under the [Apache License 2.0](LICENSE). The training datasets keep their own licenses: XNLI appears to be non-commercial, several are CC-BY or CC-BY-SA, and some are listed as "other" or "unknown". Check them before training or releasing a model for commercial use. Model weights are not distributed here yet.
+The code is released under the [Apache License 2.0](LICENSE). The training datasets keep their own licenses: XNLI appears to be non-commercial, several are CC-BY or CC-BY-SA, and some are listed as "other" or "unknown". Check them before training or releasing a model for commercial use. The published weights on Hugging Face are CC BY-NC 4.0 (non-commercial) for that reason.
 
 ## Acknowledgements
 
