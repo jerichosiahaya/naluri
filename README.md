@@ -19,10 +19,11 @@ All numbers were measured in this repo (single runs). Jev was called live throug
 | | Naluri | Laya-multilingual | Jev 1.13.0 |
 |---|---|---|---|
 | **typed-decisions**, after a 17-minute fine-tune on its train split | 72.5% | 76.6% *(published)* | 73.8% *(zero-shot)* |
-| typed-decisions, zero-shot | 38.6% (M3) | 35.2% | **73.8%** |
-| XCOPA cause/effect, unseen task (11 languages) | **58.6%** (M2) | 54.7% | – |
-| SIB-200 topic, unseen task (12 languages) | 67.5% (M2) | **70.8%** | – |
-| AG News topic | 74.5% (M2) | **92.0%** | 88.0% |
+| typed-decisions, zero-shot | 39.3% (M4) | 35.2% | **73.8%** |
+| XCOPA cause/effect, unseen task (11 languages) | **57.2%** (M4) | 54.7% | – |
+| SIB-200 topic (12 languages; M4 trains on *other* topic datasets) | **74.4%** (M4) | 70.8% | – |
+| AG News topic | 76.0% (M4) | **92.0%** | 88.0% |
+| AG News calibration error (lower is better) | **0.034** (M4) | 0.052 | 0.080 |
 | Intent in 5 languages never trained on (a task Naluri trained on) | **75.7%** (M2) | 37.6% | – |
 | Calibration error (ECE, lower is better) on typed-decisions, fine-tuned | **0.020** | – | 0.042 |
 | Calibration error across the 9 eval sets in REPORT.md | **0.03–0.07** (M2) | 0.12–0.56 | – |
@@ -44,7 +45,7 @@ Model weights are not in the repo yet, so train a model first (see *Reproduce*).
 ```bash
 .venv/bin/python ask.py                                   # built-in examples, CPU
 .venv/bin/python ask.py --state "Pesanan saya belum sampai!" --questions my_questions.json
-.venv/bin/python ask.py --model runs/naluri-xlmr-base-m2 --device cuda
+.venv/bin/python ask.py --model runs/naluri-xlmr-base-m4-s0 --device cuda
 ```
 
 `my_questions.json`:
@@ -89,6 +90,7 @@ s1.predict(tok, model, {"order": {"status": "delayed", "days_late": 6}},
 | **M2** | 8 task types and the most-general epoch | the best general model so far |
 | M2 + fine-tune | typed-decisions train split | ties Jev on typed-decisions |
 | M3 | + 4.7k teacher-labeled synthetic decisions | +9.6 points zero-shot on typed-decisions |
+| **M4** | from M2 + balanced sampling, 3× synthetic, topic data (2 seeds) | **the best model so far:** SIB-200 74.4%, above Laya |
 
 ## Reproduce
 
@@ -113,7 +115,7 @@ The API clients read keys from a local `.env` file, which is not committed: `JEV
 
 ## Roadmap
 
-- Scale the synthetic data (oversampling, a mixed dev set for epoch selection, several seeds, then about 50k decisions)
+- Synthetic data with more agent-trace, workflow and policy decisions over structured states, scaled to 20–50k decisions (M4 showed that better use of the current 4.7k isn't enough for typed-decisions)
 - An **mmBERT-base** backbone (8k context), and XLM-R large
 - A `/v1/systemone`-compatible server for side-by-side battles with Jev, Laya and others
 

@@ -31,6 +31,8 @@ ap.add_argument("--lr-head", type=float, default=5e-4)
 ap.add_argument("--seed", type=int, default=0)
 ap.add_argument("--data", default="data", help="dir with train.jsonl / val.jsonl (and optional gen_dev.jsonl)")
 ap.add_argument("--init", help="start from a trained run dir instead of the base model")
+ap.add_argument("--task-alpha", type=float, help="resample each epoch by task, p(task) ~ size^alpha (e.g. 0.5)")
+ap.add_argument("--boost", nargs="*", default=[], help="extra task weight on top of --task-alpha, e.g. synth=3")
 args = ap.parse_args()
 OUT = HERE / "runs" / args.name
 random.seed(args.seed)
@@ -66,6 +68,21 @@ def batches(items, shuffle):
     return [[items[i] for i in b] for b in out]
 
 
+def epoch_items(items):
+    """With --task-alpha: draw len(items) examples, task t with probability ~ n_t^alpha, so small tasks
+    (synthetic, RACE, spam) are not drowned out by big ones. Synthetic domains count as one task."""
+    if not args.task_alpha:
+        return items
+    groups = {}
+    for it in items:
+        groups.setdefault(it["task"].split(":")[0], []).append(it)
+    names = sorted(groups)
+    boost = {k: float(v) for k, v in (b.split("=") for b in args.boost)}
+    weights = [len(groups[n]) ** args.task_alpha * boost.get(n, 1.0) for n in names]
+    picks = random.choices(names, weights=weights, k=len(items))
+    return [random.choice(groups[n]) for n in picks]
+
+
 def run(model, chunk, device):
     b = {k: v.to(device) for k, v in collate(chunk, tok.pad_token_id).items()}
     with torch.autocast("cuda", dtype=torch.bfloat16):
@@ -87,10 +104,16 @@ def accuracy(preds):
     return sum(int(z.argmax()) == it["gold"] for it, z in preds) / len(preds)
 
 
+def macro(preds):
+    """Mean of per-task accuracies (so a big dev task cannot dominate epoch selection)."""
+    tasks = sorted({it["task"].split(":")[0] for it, _ in preds})
+    return sum(accuracy([p for p in preds if p[0]["task"].split(":")[0] == t]) for t in tasks) / len(tasks)
+
+
 def report(tag, preds):
-    tasks = sorted({it["task"] for it, _ in preds})
-    per = " | ".join(f"{t} {accuracy([p for p in preds if p[0]['task'] == t]):.3f}" for t in tasks)
-    print(f"{tag}: val acc {accuracy(preds):.3f}  ({per})")
+    tasks = sorted({it["task"].split(":")[0] for it, _ in preds})
+    per = " | ".join(f"{t} {accuracy([p for p in preds if p[0]['task'].split(':')[0] == t]):.3f}" for t in tasks)
+    print(f"{tag}: val acc {accuracy(preds):.3f}, macro {macro(preds):.3f}  ({per})")
 
 
 t0 = time.time()
@@ -117,21 +140,22 @@ sched = torch.optim.lr_scheduler.LambdaLR(
 report("before training", val_logits(model, val_items, device))
 if gen_items:
     report("before training (gen-dev)", val_logits(model, gen_items, device))
-best_score, best_epoch, best_state = -1.0, 0, None
+best_score, best_epoch = -1.0, 0
+BEST = OUT / "best_epoch.pt"  # best weights go to disk, not RAM
 step = 0
 for epoch in range(args.epochs):
-    bar = tqdm(batches(train_items, shuffle=True), desc=f"epoch {epoch + 1}/{args.epochs}", unit="batch")
+    bar = tqdm(batches(epoch_items(train_items), shuffle=True), desc=f"epoch {epoch + 1}/{args.epochs}", unit="batch")
     total = 0.0
     for i, chunk in enumerate(bar, 1):
         logits = run(model, chunk, device)
-        if all(it["target"] for it in chunk):  # soft cross-entropy against the teacher distribution
-            target = torch.zeros_like(logits)
-            for j, it in enumerate(chunk):
+        # per item: the teacher's soft distribution when there is one, else one-hot on the gold option
+        target = torch.zeros_like(logits)
+        for j, it in enumerate(chunk):
+            if it["target"]:
                 target[j, :len(it["target"])] = torch.tensor(it["target"], device=device)
-            loss = -(target * F.log_softmax(logits, -1)).sum(-1).mean()
-        else:
-            gold = torch.tensor([it["gold"] for it in chunk], device=device)
-            loss = F.cross_entropy(logits, gold)
+            else:
+                target[j, it["gold"]] = 1.0
+        loss = -(target * F.log_softmax(logits, -1)).sum(-1).mean()
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
         opt.step()
@@ -144,14 +168,16 @@ for epoch in range(args.epochs):
     if gen_items:
         gen = val_logits(model, gen_items, device)
         report(f"epoch {epoch + 1} (gen-dev)", gen)
-        score = accuracy(gen)
-        if score > best_score:  # keep the most general epoch (weights copied to CPU)
+        score = macro(gen)
+        if score > best_score:  # keep the most general epoch
             best_score, best_epoch = score, epoch + 1
-            best_state = {k: v.detach().to("cpu", copy=True) for k, v in model.state_dict().items()}
+            OUT.mkdir(parents=True, exist_ok=True)
+            torch.save(model.state_dict(), BEST)
 
-if best_state is not None:
-    model.load_state_dict(best_state)
-    print(f"keeping epoch {best_epoch} (gen-dev acc {best_score:.3f})")
+if BEST.exists():
+    model.load_state_dict(torch.load(BEST, map_location=device))
+    BEST.unlink()
+    print(f"keeping epoch {best_epoch} (gen-dev macro acc {best_score:.3f})")
 
 
 # --- temperature per question type, fitted on val -------------------------------------------------

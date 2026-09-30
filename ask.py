@@ -32,7 +32,7 @@ EXAMPLES = [
 ]
 
 ap = argparse.ArgumentParser()
-ap.add_argument("--model", default="runs/naluri-xlmr-base-m2", help="run dir (M2 = best general model)")
+ap.add_argument("--model", default="runs/naluri-xlmr-base-m4-s0", help="run dir (M4 = best model so far)")
 ap.add_argument("--device", default="cpu", choices=["cpu", "cuda"])
 ap.add_argument("--state", help="text, or a JSON object/array")
 ap.add_argument("--questions", help="path to a questions JSON file")

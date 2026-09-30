@@ -1,0 +1,214 @@
+{
+  "amazon_score": {
+    "n": 900,
+    "random": 0.2,
+    "naluri": {
+      "acc": 0.54,
+      "ece": 0.056,
+      "p50_ms": 4.85,
+      "score_mae": 0.603,
+      "per_lang": {
+        "de": 0.523,
+        "en": 0.567,
+        "es": 0.603,
+        "fr": 0.55,
+        "ja": 0.514,
+        "zh": 0.48
+      },
+      "seeds_acc": [
+        0.54,
+        0.539
+      ]
+    }
+  },
+  "belebele_unseen_task": {
+    "n": 1791,
+    "random": 0.25,
+    "naluri": {
+      "acc": 0.337,
+      "ece": 0.11,
+      "p50_ms": 5.55,
+      "order_consistency": 0.678,
+      "per_lang": {
+        "amh_Ethi": 0.283,
+        "arb_Arab": 0.359,
+        "eng_Latn": 0.347,
+        "hin_Deva": 0.309,
+        "ind_Latn": 0.312,
+        "jav_Latn": 0.295,
+        "rus_Cyrl": 0.402,
+        "swh_Latn": 0.359,
+        "tha_Thai": 0.396,
+        "vie_Latn": 0.383,
+        "yor_Latn": 0.215,
+        "zho_Hans": 0.376
+      },
+      "seeds_acc": [
+        0.338,
+        0.335
+      ]
+    }
+  },
+  "massive_heldout_langs": {
+    "n": 1000,
+    "random": 0.125,
+    "naluri": {
+      "acc": 0.75,
+      "ece": 0.045,
+      "p50_ms": 4.9,
+      "order_consistency": 0.91,
+      "per_lang": {
+        "am": 0.742,
+        "jv": 0.768,
+        "km": 0.83,
+        "sw": 0.657,
+        "tl": 0.752
+      },
+      "seeds_acc": [
+        0.746,
+        0.754
+      ]
+    }
+  },
+  "massive_seen_langs": {
+    "n": 1000,
+    "random": 0.125,
+    "naluri": {
+      "acc": 0.909,
+      "ece": 0.026,
+      "p50_ms": 4.8,
+      "order_consistency": 0.975,
+      "per_lang": {
+        "de": 0.89,
+        "en": 0.915,
+        "es": 0.915,
+        "fr": 0.895,
+        "id": 0.932
+      },
+      "seeds_acc": [
+        0.91,
+        0.909
+      ]
+    }
+  },
+  "sentiment_new_domain": {
+    "n": 1050,
+    "random": 0.333,
+    "naluri": {
+      "acc": 0.634,
+      "ece": 0.099,
+      "p50_ms": 4.7,
+      "order_consistency": 0.869,
+      "per_lang": {
+        "arabic": 0.633,
+        "english": 0.603,
+        "hindi": 0.564,
+        "indonesian": 0.883,
+        "italian": 0.567,
+        "malay": 0.503,
+        "portuguese": 0.683
+      },
+      "seeds_acc": [
+        0.64,
+        0.628
+      ]
+    }
+  },
+  "sib200_unseen_task": {
+    "n": 2448,
+    "random": 0.143,
+    "naluri": {
+      "acc": 0.744,
+      "ece": 0.057,
+      "p50_ms": 4.9,
+      "order_consistency": 0.94,
+      "per_lang": {
+        "amh_Ethi": 0.671,
+        "arb_Arab": 0.804,
+        "eng_Latn": 0.826,
+        "hin_Deva": 0.782,
+        "ind_Latn": 0.821,
+        "jav_Latn": 0.72,
+        "rus_Cyrl": 0.804,
+        "swh_Latn": 0.714,
+        "tha_Thai": 0.799,
+        "vie_Latn": 0.829,
+        "yor_Latn": 0.326,
+        "zho_Hans": 0.835
+      },
+      "seeds_acc": [
+        0.745,
+        0.744
+      ]
+    }
+  },
+  "xcopa_unseen_task": {
+    "n": 5500,
+    "random": 0.5,
+    "naluri": {
+      "acc": 0.572,
+      "ece": 0.076,
+      "p50_ms": 4.65,
+      "order_consistency": 0.913,
+      "per_lang": {
+        "et": 0.571,
+        "ht": 0.514,
+        "id": 0.603,
+        "it": 0.616,
+        "qu": 0.513,
+        "sw": 0.505,
+        "ta": 0.582,
+        "th": 0.614,
+        "tr": 0.575,
+        "vi": 0.589,
+        "zh": 0.611
+      },
+      "seeds_acc": [
+        0.568,
+        0.576
+      ]
+    }
+  },
+  "xnli_heldout_langs": {
+    "n": 1000,
+    "random": 0.333,
+    "naluri": {
+      "acc": 0.574,
+      "ece": 0.043,
+      "p50_ms": 4.9,
+      "order_consistency": 0.887,
+      "per_lang": {
+        "bg": 0.623,
+        "el": 0.597,
+        "sw": 0.532,
+        "th": 0.613,
+        "ur": 0.505
+      },
+      "seeds_acc": [
+        0.581,
+        0.567
+      ]
+    }
+  },
+  "xnli_seen_langs": {
+    "n": 1000,
+    "random": 0.333,
+    "naluri": {
+      "acc": 0.649,
+      "ece": 0.041,
+      "p50_ms": 4.8,
+      "order_consistency": 0.9,
+      "per_lang": {
+        "de": 0.635,
+        "en": 0.682,
+        "es": 0.682,
+        "fr": 0.675,
+        "ru": 0.573
+      },
+      "seeds_acc": [
+        0.649,
+        0.65
+      ]
+    }
+  }
+}

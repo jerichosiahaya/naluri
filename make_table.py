@@ -16,7 +16,7 @@ EVALS = [  # (file stem, label, fair vs zero-shot Laya?)
     ("amazon_score", "Amazon stars (1-5, exact)", "no: task trained"),
     ("sentiment_new_domain", "Sentiment, new domain + languages", "partly: similar skill"),
     ("xcopa_unseen_task", "XCOPA cause/effect (unseen task)", "yes"),
-    ("sib200_unseen_task", "SIB-200 topic (unseen task)", "yes"),
+    ("sib200_unseen_task", "SIB-200 topic (unseen task**)", "yes**"),
     ("belebele_unseen_task", "Belebele reading (unseen task*)", "yes*"),
 ]
 
@@ -34,7 +34,8 @@ def load(*names):
 runs = {"M0": load("naluri-xlmr-base-m0.json", "naluri-xlmr-base-m0_new_evals.json"),
         "M1": load("naluri-xlmr-base-m1.json"),
         "M2": load("naluri-xlmr-base-m2.json"),
-        "M3": load("naluri-xlmr-base-m3.json")}
+        "M3": load("naluri-xlmr-base-m3.json"),
+        "M4": load("naluri-xlmr-base-m4.json")}  # mean of 2 seeds
 laya = load("naluri-xlmr-base-m1.json")
 
 
