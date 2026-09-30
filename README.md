@@ -5,10 +5,20 @@
 Naluri (Indonesian for *instinct*; **N**eural **A**nswering via **L**abel **U**nderstanding and **R**apid **I**nference) is a small *System One* decision model built on XLM-RoBERTa base (≈280M parameters). You give it a text or JSON state and a typed question with its options written out. It returns calibrated probabilities over those options in a single forward pass: about **5 ms per question on a laptop GPU** and about 50–60 ms on a CPU.
 
 ```text
-state:     "memek kau, slot anjing, penipu"
-question:  What is the sentiment of this message?   positive / neutral / negative
-answer:    negative 0.80   neutral 0.16   positive 0.04
+state:  {"message": "Kak, barangnya baru sampai tapi layarnya retak. Tolong kirim unit pengganti ya,
+                     saya butuh buat kerja besok.",
+         "order": {"id": "INV-2291", "item": "Monitor 24 inch", "status": "delivered", "paid": true}}
+        (Indonesian: "The item just arrived but the screen is cracked. Please send a replacement unit,
+         I need it for work tomorrow.")
+
+intent     choice  What does the customer want?    replacement 0.56 · product_question 0.30 · refund 0.09 · track_order 0.06
+urgent     noul    Does this need a reply today?   true 0.56
+sentiment  score   How does the customer feel?     happy 0.05 · neutral 0.27 · disappointed 0.42 · angry 0.26
+
+3 typed questions about text + JSON, answered in one pass (~0.3 s on a laptop CPU)
 ```
+
+*Real output of [`naluri-xlmr-base`](https://huggingface.co/jerichosiahaya/naluri-xlmr-base) (M4). Zero-shot intent routing on your own labels is still hit-and-miss. Fine-tuning on your own labeled examples closes most of the gap: on typed-decisions, 1,080 training cases took an earlier checkpoint from 29% to a tie with Jev (see Results).*
 
 It speaks the same three question types as TypeSafe Jev and Laya: `noul` (yes/no), `choice` (pick one) and `score` (an ordered scale).
 
