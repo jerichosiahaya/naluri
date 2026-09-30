@@ -20,7 +20,7 @@ PRICES = {  # $ per 1M tokens (input, output), as configured on the proxy's /v1/
     "azure_ai/deepseek-v4-pro": (1.74, 3.48),
 }
 CACHE = HERE / "data" / "synth" / "llm_cache.jsonl"
-CAP_USD = 5.0
+CAP_USD = 5.0  # cumulative across all runs; raise via set_cap() for a new, approved budget
 
 spent = {"usd": 0.0, "input_tokens": 0, "output_tokens": 0, "calls": 0, "cached": 0, "errors": 0}
 _lock = threading.Lock()
@@ -38,6 +38,11 @@ spent["usd_before_this_run"] = round(spent["usd"], 4)
 
 class BudgetExceeded(RuntimeError):
     pass
+
+
+def set_cap(usd):
+    global CAP_USD
+    CAP_USD = usd
 
 
 def chat(prompt, model="azure_ai/deepseek-v4-flash", temperature=0.0, max_tokens=2000, seed_tag=""):

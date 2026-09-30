@@ -20,7 +20,7 @@ from tqdm import tqdm
 import llm
 
 HERE = Path(__file__).parent
-OUT = HERE / "data" / "synth"
+OUT = HERE / "data" / "synth"  # overridden by --out-dir
 TEACHER = "azure_ai/deepseek-v4-flash"
 WORKERS = 16
 
@@ -40,6 +40,34 @@ DOMAINS = [  # deliberately excludes agent-trace observability, customer-support
 LANGS = [("English", 30), ("Indonesian", 10), ("Spanish", 6), ("French", 5), ("German", 5), ("Portuguese", 5),
          ("Chinese", 5), ("Japanese", 4), ("Arabic", 4), ("Hindi", 4), ("Russian", 4), ("Vietnamese", 3),
          ("Thai", 3), ("Turkish", 3), ("Korean", 3), ("Swahili", 2), ("Italian", 2)]
+# M5 "ops" profile: operational decisions over structured run/event logs. Same question archetypes as
+# typed-decisions (next action, outcome grade, risk level, needs review) but none of its four workflows
+# (agent traces, customer support, invoices, security incidents).
+OPS_DOMAINS = [
+    "CI/CD pipeline runs", "nightly ETL / data pipeline jobs", "robotic process automation bot runs",
+    "IoT sensor telemetry alerts", "warehouse robot missions", "delivery drone flights", "database backup jobs",
+    "cloud autoscaling events", "Kubernetes deployment rollouts", "ML model training jobs", "batch payroll runs",
+    "expense report approvals", "purchase order approval workflows", "employee access requests",
+    "loan underwriting pipelines", "insurance claim processing workflows", "fraud rule engine hits",
+    "content moderation queue decisions", "SLA breach monitoring", "manufacturing line quality checks",
+    "energy grid control actions", "trading bot order executions", "email marketing campaign sends",
+    "medical prior-authorization workflows", "laboratory sample processing", "logistics route optimization runs",
+    "customer data export requests (privacy)", "feature flag rollouts", "vendor onboarding checks",
+    "scheduled maintenance of fleet vehicles",
+]
+OPS_ARCHETYPES = """Across the cases, cover these operational question archetypes (2-4 per case, mixed types):
+  * next action for the system/operator (choice, e.g. continue / monitor / pause / roll back / escalate / stop)
+  * outcome grade of the run (choice, e.g. success / partial / failure / harmful or out-of-policy)
+  * risk or severity level (score, 3-5 ordered levels with concrete descriptions)
+  * whether a human must review it (noul), whether a policy/constraint was violated (noul)
+  * who should own it / which queue it goes to (choice)
+Make the correct answer depend on the numbers and events in the state (error counts, retries, thresholds,
+irreversible steps, constraint violations, durations, amounts), and include some clean successful runs."""
+OPS_FORMATS = ["a nested JSON run record with config, constraints, a list of step events (with status, retries,"
+               " durations) and a summary block",
+               "a nested JSON object with metrics, thresholds, recent alerts and actions already taken",
+               "a JSON workflow record with the request, policy rules, approvals so far and anomalies",
+               "a JSON log excerpt (list of timestamped events) plus a short operator note in free text"]
 FORMATS = ["a nested JSON object with realistic fields, ids, numbers, timestamps and statuses",
            "a nested JSON object with a list of recent events or line items",
            "a plain-text message or email written by a person",
@@ -47,7 +75,7 @@ FORMATS = ["a nested JSON object with realistic fields, ids, numbers, timestamps
            "a JSON object mixing structured fields with a free-text note"]
 
 
-def gen_prompt(domain, lang, fmt, n):
+def gen_prompt(domain, lang, fmt, n, extra=""):
     return f"""Create {n} realistic, varied decision cases for a fast decision model in the domain: {domain}.
 Write all human-readable text (state text, instructions, option descriptions) in {lang}. JSON keys and option
 keys stay in English snake_case.
@@ -64,6 +92,7 @@ Each case has:
     "criteria": ["<level 0 description>", "<level 1 description>", ...]}} with 3-5 levels.
   Questions should need judgment (risk, priority, routing, next action, policy fit, urgency, sentiment), not
   simple lookups. Do NOT include the answers.
+{extra}
 
 Return JSON: {{"cases": [{{"state": ..., "questions": {{...}}}}, ...]}}"""
 
@@ -184,11 +213,14 @@ def cmd_gen(args):
     rng = random.Random(args.seed)
     langs = [l for l, w in LANGS for _ in range(w)]
     per_call = 4
-    jobs = [(rng.choice(DOMAINS), rng.choice(langs), rng.choice(FORMATS), i) for i in range(args.cases // per_call)]
+    ops = args.profile == "ops"
+    domains, formats = (OPS_DOMAINS, OPS_FORMATS) if ops else (DOMAINS, FORMATS)
+    jobs = [(rng.choice(domains), rng.choice(langs), rng.choice(formats), i) for i in range(args.cases // per_call)]
 
     def job(domain, lang, fmt, i):
-        reply = llm.parse_json(llm.chat(gen_prompt(domain, lang, fmt, per_call), temperature=1.0, max_tokens=4000,
-                                        seed_tag=f"gen{i}"))
+        prompt = gen_prompt(domain, lang, fmt, per_call, OPS_ARCHETYPES if ops else "")
+        reply = llm.parse_json(llm.chat(prompt, temperature=1.0, max_tokens=5000,
+                                        seed_tag=f"{args.profile}{args.seed}gen{i}"))
         cases = []
         for c in (reply or {}).get("cases", []):
             qs = {k: v for k, v in (c.get("questions") or {}).items() if isinstance(v, dict) and valid_question(v)}
@@ -229,7 +261,7 @@ def cmd_export(args):
             for qid, probs in x["labels"].items():
                 q = c["questions"][qid]
                 target = [probs[k] for k in options(q)]
-                f.write(json.dumps({"task": "synth:" + c["domain"], "lang": c["lang"], "state": c["state"], "q": q,
+                f.write(json.dumps({"task": f"{args.task_prefix}:" + c["domain"], "lang": c["lang"], "state": c["state"], "q": q,
                                     "gold": max(range(len(target)), key=target.__getitem__), "target": target},
                                    ensure_ascii=False) + "\n")
                 n += 1
@@ -243,6 +275,13 @@ if __name__ == "__main__":
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--teacher", default="azure_ai/deepseek-v4-pro", help="labeling model (label command)")
     ap.add_argument("--rotations", type=int, default=1, help="differently-ordered labeling passes per case")
+    ap.add_argument("--profile", default="general", choices=["general", "ops"], help="generation profile (gen)")
+    ap.add_argument("--out-dir", default=str(OUT), help="where cases/labels/records live")
+    ap.add_argument("--task-prefix", default="synth", help="task name prefix in exported records")
+    ap.add_argument("--cap-usd", type=float, default=llm.CAP_USD, help="cumulative spend cap across all runs")
     a = ap.parse_args()
+    OUT = Path(a.out_dir)
+    OUT.mkdir(parents=True, exist_ok=True)
+    llm.set_cap(a.cap_usd)
     globals()[f"cmd_{a.cmd}"](a)
     print("llm usage:", {k: round(v, 4) if isinstance(v, float) else v for k, v in llm.spent.items()})

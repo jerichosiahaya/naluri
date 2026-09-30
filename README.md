@@ -31,10 +31,10 @@ All numbers were measured in this repo (single runs). Jev was called live throug
 | | Naluri | Laya-multilingual | Jev 1.13.0 |
 |---|---|---|---|
 | **typed-decisions**, after a 17-minute fine-tune on its train split | 72.5% | 76.6% *(published)* | 73.8% *(zero-shot)* |
-| typed-decisions, zero-shot | 39.3% (M4) | 35.2% | **73.8%** |
+| typed-decisions, zero-shot | 43.0% (M5) | 35.2% | **73.8%** |
 | XCOPA cause/effect, unseen task (11 languages) | **57.2%** (M4) | 54.7% | – |
 | SIB-200 topic (12 languages; M4 trains on *other* topic datasets) | **74.4%** (M4) | 70.8% | – |
-| AG News topic | 76.0% (M4) | **92.0%** | 88.0% |
+| AG News topic | 77.3% (M5) | **92.0%** | 88.0% |
 | AG News calibration error (lower is better) | **0.034** (M4) | 0.052 | 0.080 |
 | Intent in 5 languages never trained on (a task Naluri trained on) | **75.7%** (M2) | 37.6% | – |
 | Calibration error (ECE, lower is better) on typed-decisions, fine-tuned | **0.020** | – | 0.042 |
@@ -110,7 +110,8 @@ s1.predict(tok, model, {"order": {"status": "delayed", "days_late": 6}},
 | **M2** | 8 task types and the most-general epoch | the best general model so far |
 | M2 + fine-tune | typed-decisions train split | ties Jev on typed-decisions |
 | M3 | + 4.7k teacher-labeled synthetic decisions | +9.6 points zero-shot on typed-decisions |
-| **M4** | from M2 + balanced sampling, 3× synthetic, topic data (2 seeds) | **the best model so far:** SIB-200 74.4%, above Laya |
+| **M4** | from M2 + balanced sampling, 3× synthetic, topic data (2 seeds) | SIB-200 74.4%, above Laya; **published on Hugging Face** |
+| **M5** | from M4 + 10k operational decisions (run logs; next action, outcome, risk) | **the best model so far:** typed-decisions zero-shot 43.0%, no regressions |
 
 ## Reproduce
 
