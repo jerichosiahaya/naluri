@@ -68,6 +68,26 @@ OPS_FORMATS = ["a nested JSON run record with config, constraints, a list of ste
                "a nested JSON object with metrics, thresholds, recent alerts and actions already taken",
                "a JSON workflow record with the request, policy rules, approvals so far and anomalies",
                "a JSON log excerpt (list of timestamped events) plus a short operator note in free text"]
+# M6 "pairs" profile: contrastive minimal pairs. One set of questions, several versions of the state that
+# differ in a few decisive facts so the right answers change. The only way to score well is to read the state.
+PAIRS_PROMPT = """Create {n} decision groups for a fast decision model in the domain: {domain}.
+Write human-readable text in {lang}; JSON keys and option keys in English snake_case.
+
+Each group has:
+- "questions": 2 to 3 questions shared by every version, mixing types:
+    choice: {{"type": "choice", "instructions": ..., "criteria": {{"<option_key>": "<description>", ...}}}} with 3-5 options
+    noul:   {{"type": "noul", "instructions": ..., "criteria": {{"true": ..., "false": ...}}}}
+    score:  {{"type": "score", "instructions": ..., "criteria": ["<level 0>", "<level 1>", ...]}} with 3-5 levels
+  Use operational or business judgment questions: next action, outcome grade, risk level, needs review,
+  policy violation, routing / owner queue.
+- "states": 3 or 4 versions of {fmt}. All versions describe the same kind of situation and look alike, but
+  change a FEW decisive details (numbers vs thresholds, error or retry counts, amounts vs limits, a policy
+  violation, an irreversible step, a missing approval, customer tier, time left) so that the correct answer to
+  at least one choice question is DIFFERENT between versions. Across the versions, make different options the
+  correct one; include at least one clean, low-risk version.
+Do NOT include the answers.
+
+Return JSON: {{"groups": [{{"questions": {{...}}, "states": [<state>, <state>, <state>]}}, ...]}}"""
 FORMATS = ["a nested JSON object with realistic fields, ids, numbers, timestamps and statuses",
            "a nested JSON object with a list of recent events or line items",
            "a plain-text message or email written by a person",
@@ -209,7 +229,43 @@ def cmd_quality(args):
               f"(missing answers: {sum(m for _, m in res)})  | spent so far ${llm.spent['usd']:.3f}")
 
 
+def cmd_gen_pairs(args):
+    rng = random.Random(args.seed)
+    langs = [l for l, w in LANGS for _ in range(w)]
+    per_call = 2
+    domains = OPS_DOMAINS + [d for d in DOMAINS if d not in ("news article classification", "research paper review")]
+    jobs = [(rng.choice(domains), rng.choice(langs), rng.choice(OPS_FORMATS + FORMATS[:2]), i)
+            for i in range(args.cases // per_call)]
+
+    def job(domain, lang, fmt, i):
+        reply = llm.parse_json(llm.chat(PAIRS_PROMPT.format(n=per_call, domain=domain, lang=lang, fmt=fmt),
+                                        temperature=1.0, max_tokens=6000, seed_tag=f"pairs{args.seed}gen{i}"))
+        cases = []
+        for g_i, g in enumerate((reply or {}).get("groups", [])):
+            qs = {k: v for k, v in (g.get("questions") or {}).items() if isinstance(v, dict) and valid_question(v)}
+            states = [x for x in (g.get("states") or []) if x]
+            if not qs or len(states) < 2:
+                continue
+            for q in qs.values():
+                if q["type"] == "noul" and q.get("criteria"):
+                    q["criteria"] = {k.lower(): v for k, v in q["criteria"].items()}
+            for v_i, st in enumerate(states):
+                cases.append({"domain": domain, "lang": lang, "group": f"p{args.seed}_{i}_{g_i}", "variant": v_i,
+                              "state": st, "questions": qs})
+        return cases
+
+    cases = [c for batch in run_parallel(job, jobs, "generate pairs") if batch for c in batch]
+    with open(OUT / "cases.jsonl", "w", encoding="utf-8") as f:
+        for i, c in enumerate(cases):
+            f.write(json.dumps({"id": f"v{i}"} | c, ensure_ascii=False) + "\n")
+    groups = len({c["group"] for c in cases})
+    print(f"{groups} groups, {len(cases)} state versions, {sum(len(c['questions']) for c in cases)} questions "
+          f"| spent ${llm.spent['usd']:.3f}")
+
+
 def cmd_gen(args):
+    if args.profile == "pairs":
+        return cmd_gen_pairs(args)
     rng = random.Random(args.seed)
     langs = [l for l, w in LANGS for _ in range(w)]
     per_call = 4
@@ -254,12 +310,27 @@ def cmd_label(args):
 
 def cmd_export(args):
     cases = {c["id"]: c for c in map(json.loads, open(OUT / "cases.jsonl", encoding="utf-8"))}
+    # pairs: which questions actually change their teacher answer across a group's versions
+    answers = {}
+    for x in map(json.loads, open(OUT / "labels.jsonl", encoding="utf-8")):
+        c = cases[x["id"]]
+        for qid, probs in x["labels"].items():
+            answers.setdefault((c.get("group"), qid), set()).add(max(probs, key=probs.get))
+    flips = {}
+    for (g, qid), a in answers.items():
+        if g and len(a) > 1:
+            flips.setdefault(g, set()).add(qid)
+    if any(c.get("group") for c in cases.values()):
+        print(f"contrastive: {sum(len(v) for v in flips.values())} group-questions change answer across versions "
+              f"({len(flips)} of {len({c.get('group') for c in cases.values()})} groups)")
     n = 0
     with open(OUT / "records.jsonl", "w", encoding="utf-8") as f:
         for x in map(json.loads, open(OUT / "labels.jsonl", encoding="utf-8")):
             c = cases[x["id"]]
             for qid, probs in x["labels"].items():
                 q = c["questions"][qid]
+                if c.get("group") and args.contrastive_only and qid not in flips.get(c["group"], set()):
+                    continue
                 target = [probs[k] for k in options(q)]
                 f.write(json.dumps({"task": f"{args.task_prefix}:" + c["domain"], "lang": c["lang"], "state": c["state"], "q": q,
                                     "gold": max(range(len(target)), key=target.__getitem__), "target": target},
@@ -275,9 +346,11 @@ if __name__ == "__main__":
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--teacher", default="azure_ai/deepseek-v4-pro", help="labeling model (label command)")
     ap.add_argument("--rotations", type=int, default=1, help="differently-ordered labeling passes per case")
-    ap.add_argument("--profile", default="general", choices=["general", "ops"], help="generation profile (gen)")
+    ap.add_argument("--profile", default="general", choices=["general", "ops", "pairs"], help="generation profile (gen)")
     ap.add_argument("--out-dir", default=str(OUT), help="where cases/labels/records live")
     ap.add_argument("--task-prefix", default="synth", help="task name prefix in exported records")
+    ap.add_argument("--contrastive-only", action="store_true",
+                    help="export: keep only pair questions whose teacher answer changes across versions")
     ap.add_argument("--cap-usd", type=float, default=llm.CAP_USD, help="cumulative spend cap across all runs")
     a = ap.parse_args()
     OUT = Path(a.out_dir)

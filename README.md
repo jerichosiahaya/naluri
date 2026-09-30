@@ -31,7 +31,7 @@ All numbers were measured in this repo (single runs). Jev was called live throug
 | | Naluri | Laya-multilingual | Jev 1.13.0 |
 |---|---|---|---|
 | **typed-decisions**, after a 17-minute fine-tune on its train split | 72.5% | 76.6% *(published)* | 73.8% *(zero-shot)* |
-| typed-decisions, zero-shot | 43.0% (M5) | 35.2% | **73.8%** |
+| typed-decisions, zero-shot | 47.1% (M6) | 35.2% | **73.8%** |
 | XCOPA cause/effect, unseen task (11 languages) | **57.2%** (M4) | 54.7% | – |
 | SIB-200 topic (12 languages; M4 trains on *other* topic datasets) | **74.4%** (M4) | 70.8% | – |
 | AG News topic | 77.3% (M5) | **92.0%** | 88.0% |
@@ -98,6 +98,18 @@ s1.predict(tok, model, {"order": {"status": "delayed", "days_late": 6}},
         ▼  small MLP at each <mask>  →  one score per option  →  softmax  →  probabilities
 ```
 
+Step by step, with the MLP head expanded:
+
+```mermaid
+flowchart LR
+    IN["State + question<br/>+ options"] --> ENC["XLM-R<br/>encoder"] --> VEC["mask vector<br/>per option"]
+    subgraph HEAD["MLP head"]
+        LN["LayerNorm"] --> L1["Linear<br/>768→768"] --> G["GELU"] --> L2["Linear<br/>768→1"]
+    end
+    VEC --> LN
+    L2 --> T["÷ temperature"] --> SM["Softmax"] --> OUT["Probability<br/>per option"]
+```
+
 - **The options are input, not fixed output slots.** Naluri reads what each option *means*, so new questions and label sets need no new head.
 - **Training:** cross-entropy (soft targets when a teacher provides probabilities), followed by one calibration temperature per question type.
 - **Data:** public multilingual tasks (XNLI, MASSIVE, Amazon reviews, toxicity, language ID, emotion, RACE, SMS spam) and teacher-labeled synthetic business decisions, with options shuffled and labels and instructions paraphrased throughout.
@@ -111,7 +123,8 @@ s1.predict(tok, model, {"order": {"status": "delayed", "days_late": 6}},
 | M2 + fine-tune | typed-decisions train split | ties Jev on typed-decisions |
 | M3 | + 4.7k teacher-labeled synthetic decisions | +9.6 points zero-shot on typed-decisions |
 | **M4** | from M2 + balanced sampling, 3× synthetic, topic data (2 seeds) | SIB-200 74.4%, above Laya; **published on Hugging Face** |
-| **M5** | from M4 + 10k operational decisions (run logs; next action, outcome, risk) | **the best model so far:** typed-decisions zero-shot 43.0%, no regressions |
+| **M5** | from M4 + 10k operational decisions (run logs; next action, outcome, risk) | typed-decisions zero-shot 43.0%, no regressions; **published on Hugging Face** |
+| **M6** | from M5 + 5.5k contrastive minimal pairs + null-evidence training | **the best on typed-decisions (47.1%)**; the answer collapse is broken on 3 of 5 choice questions |
 
 ## Reproduce
 

@@ -33,6 +33,9 @@ ap.add_argument("--data", default="data", help="dir with train.jsonl / val.jsonl
 ap.add_argument("--init", help="start from a trained run dir instead of the base model")
 ap.add_argument("--task-alpha", type=float, help="resample each epoch by task, p(task) ~ size^alpha (e.g. 0.5)")
 ap.add_argument("--boost", nargs="*", default=[], help="extra task weight on top of --task-alpha, e.g. synth=3")
+ap.add_argument("--empty-frac", type=float, default=0.0,
+                help="add this fraction of training questions again with an EMPTY state and a uniform target, so the "
+                     "model learns 'no evidence -> no preference' instead of answering from option wording alone")
 args = ap.parse_args()
 OUT = HERE / "runs" / args.name
 random.seed(args.seed)
@@ -41,13 +44,19 @@ torch.manual_seed(args.seed)
 tok = AutoTokenizer.from_pretrained(args.base)
 
 
-def encode(path):
+def encode(path, empty_frac=0.0):
     items = []
+    rng = random.Random(args.seed + 7)
     for line in open(path, encoding="utf-8"):
         r = json.loads(line)
         ids, markers = build_sequence(tok, r["state"], r["q"], args.max_len)
         items.append({"ids": ids, "markers": markers, "gold": r["gold"], "qtype": QTYPE[r["q"]["type"]], "task": r["task"],
                       "target": r.get("target")})  # optional soft target (teacher distribution)
+        if empty_frac and rng.random() < empty_frac:
+            ids, markers = build_sequence(tok, "", r["q"], args.max_len)
+            k = len(markers)
+            items.append({"ids": ids, "markers": markers, "gold": 0, "qtype": QTYPE[r["q"]["type"]], "task": "empty",
+                          "target": [1.0 / k] * k})
     return items
 
 
@@ -118,7 +127,7 @@ def report(tag, preds):
 
 t0 = time.time()
 DATA = HERE / args.data
-train_items, val_items = encode(DATA / "train.jsonl"), encode(DATA / "val.jsonl")
+train_items, val_items = encode(DATA / "train.jsonl", args.empty_frac), encode(DATA / "val.jsonl")
 gen_path = DATA / "gen_dev.jsonl"
 gen_items = encode(gen_path) if gen_path.exists() else []
 print(f"encoded {len(train_items)} train / {len(val_items)} val / {len(gen_items)} gen-dev in {time.time() - t0:.0f}s")
