@@ -1,0 +1,210 @@
+{
+  "belebele_unseen_task": {
+    "n": 1791,
+    "random": 0.25,
+    "xlmr-system-one": {
+      "acc": 0.286,
+      "ece": 0.026,
+      "p50_ms": 9.5,
+      "per_lang": {
+        "amh_Ethi": 0.273,
+        "arb_Arab": 0.262,
+        "eng_Latn": 0.273,
+        "hin_Deva": 0.322,
+        "ind_Latn": 0.309,
+        "jav_Latn": 0.282,
+        "rus_Cyrl": 0.322,
+        "swh_Latn": 0.309,
+        "tha_Thai": 0.262,
+        "vie_Latn": 0.28,
+        "yor_Latn": 0.268,
+        "zho_Hans": 0.275
+      },
+      "order_consistency": 0.453
+    },
+    "laya-multilingual (zero-shot)": {
+      "acc": 0.331,
+      "ece": 0.277,
+      "p50_ms": 19.8,
+      "per_lang": {
+        "amh_Ethi": 0.267,
+        "arb_Arab": 0.383,
+        "eng_Latn": 0.413,
+        "hin_Deva": 0.336,
+        "ind_Latn": 0.329,
+        "jav_Latn": 0.329,
+        "rus_Cyrl": 0.362,
+        "swh_Latn": 0.362,
+        "tha_Thai": 0.275,
+        "vie_Latn": 0.307,
+        "yor_Latn": 0.242,
+        "zho_Hans": 0.369
+      },
+      "order_consistency": 0.803
+    }
+  },
+  "massive_heldout_langs": {
+    "n": 1000,
+    "random": 0.125,
+    "xlmr-system-one": {
+      "acc": 0.655,
+      "ece": 0.087,
+      "p50_ms": 9.0,
+      "per_lang": {
+        "am": 0.64,
+        "jv": 0.635,
+        "km": 0.765,
+        "sw": 0.55,
+        "tl": 0.685
+      },
+      "order_consistency": 0.873
+    },
+    "laya-multilingual (zero-shot)": {
+      "acc": 0.376,
+      "ece": 0.253,
+      "p50_ms": 18.0,
+      "per_lang": {
+        "am": 0.235,
+        "jv": 0.46,
+        "km": 0.325,
+        "sw": 0.295,
+        "tl": 0.565
+      },
+      "order_consistency": 0.68
+    }
+  },
+  "massive_seen_langs": {
+    "n": 1000,
+    "random": 0.125,
+    "xlmr-system-one": {
+      "acc": 0.825,
+      "ece": 0.032,
+      "p50_ms": 9.0,
+      "per_lang": {
+        "de": 0.79,
+        "en": 0.845,
+        "es": 0.805,
+        "fr": 0.83,
+        "id": 0.855
+      },
+      "order_consistency": 0.937
+    },
+    "laya-multilingual (zero-shot)": {
+      "acc": 0.625,
+      "ece": 0.118,
+      "p50_ms": 17.5,
+      "per_lang": {
+        "de": 0.535,
+        "en": 0.685,
+        "es": 0.58,
+        "fr": 0.65,
+        "id": 0.675
+      },
+      "order_consistency": 0.8
+    }
+  },
+  "sib200_unseen_task": {
+    "n": 2448,
+    "random": 0.143,
+    "xlmr-system-one": {
+      "acc": 0.611,
+      "ece": 0.22,
+      "p50_ms": 9.0,
+      "per_lang": {
+        "amh_Ethi": 0.588,
+        "arb_Arab": 0.652,
+        "eng_Latn": 0.627,
+        "hin_Deva": 0.593,
+        "ind_Latn": 0.696,
+        "jav_Latn": 0.564,
+        "rus_Cyrl": 0.662,
+        "swh_Latn": 0.559,
+        "tha_Thai": 0.711,
+        "vie_Latn": 0.74,
+        "yor_Latn": 0.191,
+        "zho_Hans": 0.745
+      },
+      "order_consistency": 0.78
+    },
+    "laya-multilingual (zero-shot)": {
+      "acc": 0.708,
+      "ece": 0.187,
+      "p50_ms": 18.7,
+      "per_lang": {
+        "amh_Ethi": 0.441,
+        "arb_Arab": 0.75,
+        "eng_Latn": 0.814,
+        "hin_Deva": 0.716,
+        "ind_Latn": 0.809,
+        "jav_Latn": 0.75,
+        "rus_Cyrl": 0.799,
+        "swh_Latn": 0.681,
+        "tha_Thai": 0.765,
+        "vie_Latn": 0.775,
+        "yor_Latn": 0.422,
+        "zho_Hans": 0.77
+      },
+      "order_consistency": 0.95
+    }
+  },
+  "xnli_heldout_langs": {
+    "n": 1000,
+    "random": 0.333,
+    "xlmr-system-one": {
+      "acc": 0.362,
+      "ece": 0.021,
+      "p50_ms": 9.3,
+      "per_lang": {
+        "bg": 0.345,
+        "el": 0.38,
+        "sw": 0.385,
+        "th": 0.31,
+        "ur": 0.39
+      },
+      "order_consistency": 0.583
+    },
+    "laya-multilingual (zero-shot)": {
+      "acc": 0.461,
+      "ece": 0.229,
+      "p50_ms": 19.3,
+      "per_lang": {
+        "bg": 0.545,
+        "el": 0.53,
+        "sw": 0.41,
+        "th": 0.455,
+        "ur": 0.365
+      },
+      "order_consistency": 0.927
+    }
+  },
+  "xnli_seen_langs": {
+    "n": 1000,
+    "random": 0.333,
+    "xlmr-system-one": {
+      "acc": 0.337,
+      "ece": 0.031,
+      "p50_ms": 9.2,
+      "per_lang": {
+        "de": 0.315,
+        "en": 0.4,
+        "es": 0.375,
+        "fr": 0.325,
+        "ru": 0.27
+      },
+      "order_consistency": 0.687
+    },
+    "laya-multilingual (zero-shot)": {
+      "acc": 0.545,
+      "ece": 0.172,
+      "p50_ms": 18.7,
+      "per_lang": {
+        "de": 0.515,
+        "en": 0.61,
+        "es": 0.55,
+        "fr": 0.58,
+        "ru": 0.47
+      },
+      "order_consistency": 0.937
+    }
+  }
+}

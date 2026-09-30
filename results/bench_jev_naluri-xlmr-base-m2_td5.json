@@ -1,0 +1,49 @@
+{
+  "typed_decisions": {
+    "published": {
+      "Jev 1.13.0 (published)": 0.727,
+      "Laya fine-tuned (published)": 0.766,
+      "Laya-multilingual zero-shot (published)": 0.342,
+      "teacher self-agreement": 0.735
+    },
+    "jev (live)": {
+      "acc": 0.4,
+      "n_decisions": 25,
+      "ece": 0.335,
+      "p50_ms_per_case": 292.4,
+      "by_type": {
+        "choice": 0.4,
+        "noul": 0.2,
+        "score": 0.5
+      },
+      "by_group": {
+        "agent_trace_observability": 0.4
+      },
+      "score_mae": 0.572
+    }
+  },
+  "ag_news": {
+    "published": {
+      "Jev 1.13.0 (published)": 0.91,
+      "Laya routed (published)": 0.95
+    },
+    "jev (live)": {
+      "acc": 1.0,
+      "n_decisions": 5,
+      "ece": 0.036,
+      "p50_ms_per_case": 306.3,
+      "by_type": {
+        "choice": 1.0
+      },
+      "by_group": {
+        "ag_news": 1.0
+      }
+    }
+  },
+  "jev_usage": {
+    "input_tokens": 4415,
+    "output_tokens": 641,
+    "calls": 8,
+    "cached": 2
+  }
+}

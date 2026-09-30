@@ -1,0 +1,76 @@
+{
+  "typed_decisions": {
+    "published": {
+      "Jev 1.13.0 (published)": 0.727,
+      "Laya fine-tuned (published)": 0.766,
+      "Laya-multilingual zero-shot (published)": 0.342,
+      "teacher self-agreement": 0.735
+    },
+    "naluri": {
+      "acc": 0.29,
+      "n_decisions": 2000,
+      "ece": 0.178,
+      "p50_ms_per_case": 53.5,
+      "by_type": {
+        "choice": 0.13,
+        "noul": 0.512,
+        "score": 0.245
+      },
+      "by_group": {
+        "agent_trace_observability": 0.254,
+        "customer_service": 0.302,
+        "invoice_processing": 0.36,
+        "security_incidents": 0.246
+      },
+      "score_mae": 0.693
+    },
+    "laya-multilingual (zero-shot)": {
+      "acc": 0.352,
+      "n_decisions": 2000,
+      "ece": 0.315,
+      "p50_ms_per_case": 93.5,
+      "by_type": {
+        "choice": 0.298,
+        "noul": 0.497,
+        "score": 0.285
+      },
+      "by_group": {
+        "agent_trace_observability": 0.286,
+        "customer_service": 0.422,
+        "invoice_processing": 0.31,
+        "security_incidents": 0.392
+      },
+      "score_mae": 0.761
+    }
+  },
+  "ag_news": {
+    "published": {
+      "Jev 1.13.0 (published)": 0.91,
+      "Laya routed (published)": 0.95
+    },
+    "naluri": {
+      "acc": 0.745,
+      "n_decisions": 2000,
+      "ece": 0.169,
+      "p50_ms_per_case": 9.3,
+      "by_type": {
+        "choice": 0.745
+      },
+      "by_group": {
+        "ag_news": 0.745
+      }
+    },
+    "laya-multilingual (zero-shot)": {
+      "acc": 0.92,
+      "n_decisions": 2000,
+      "ece": 0.052,
+      "p50_ms_per_case": 19.0,
+      "by_type": {
+        "choice": 0.92
+      },
+      "by_group": {
+        "ag_news": 0.92
+      }
+    }
+  }
+}

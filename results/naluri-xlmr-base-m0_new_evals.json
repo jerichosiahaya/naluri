@@ -1,0 +1,62 @@
+{
+  "amazon_score": {
+    "n": 900,
+    "random": 0.2,
+    "xlmr-system-one": {
+      "acc": 0.197,
+      "ece": 0.053,
+      "p50_ms": 9.7,
+      "per_lang": {
+        "de": 0.193,
+        "en": 0.187,
+        "es": 0.2,
+        "fr": 0.187,
+        "ja": 0.193,
+        "zh": 0.22
+      },
+      "score_mae": 1.262
+    }
+  },
+  "sentiment_new_domain": {
+    "n": 1050,
+    "random": 0.333,
+    "xlmr-system-one": {
+      "acc": 0.345,
+      "ece": 0.015,
+      "p50_ms": 5.6,
+      "per_lang": {
+        "arabic": 0.34,
+        "english": 0.313,
+        "hindi": 0.32,
+        "indonesian": 0.4,
+        "italian": 0.333,
+        "malay": 0.327,
+        "portuguese": 0.38
+      },
+      "order_consistency": 0.393
+    }
+  },
+  "xcopa_unseen_task": {
+    "n": 5500,
+    "random": 0.5,
+    "xlmr-system-one": {
+      "acc": 0.497,
+      "ece": 0.063,
+      "p50_ms": 8.1,
+      "per_lang": {
+        "et": 0.504,
+        "ht": 0.496,
+        "id": 0.478,
+        "it": 0.444,
+        "qu": 0.516,
+        "sw": 0.502,
+        "ta": 0.496,
+        "th": 0.476,
+        "tr": 0.55,
+        "vi": 0.472,
+        "zh": 0.528
+      },
+      "order_consistency": 0.76
+    }
+  }
+}
