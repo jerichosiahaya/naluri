@@ -65,7 +65,7 @@ Or train your own (see *Reproduce*) and use `ask.py`:
 ```bash
 .venv/bin/python ask.py                                   # built-in examples, CPU
 .venv/bin/python ask.py --state "Pesanan saya belum sampai!" --questions my_questions.json
-.venv/bin/python ask.py --model runs/naluri-xlmr-base-m4-s0 --device cuda
+.venv/bin/python ask.py --model runs/naluri-xlmr-base-m6-pairs_only --device cuda
 ```
 
 `my_questions.json`:
