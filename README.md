@@ -31,7 +31,7 @@ All numbers were measured in this repo (single runs). Jev was called live throug
 | | Naluri | Laya-multilingual | Jev 1.13.0 |
 |---|---|---|---|
 | **typed-decisions**, after a 17-minute fine-tune on its train split | 72.5% | 76.6% *(published)* | 73.8% *(zero-shot)* |
-| typed-decisions, zero-shot | 47.1% (M6) | 35.2% | **73.8%** |
+| typed-decisions, zero-shot | 46.9% (M6-pairs, published); best run 48.6% (M7) | 35.2% | **73.8%** |
 | XCOPA cause/effect, unseen task (11 languages) | **57.2%** (M4) | 54.7% | – |
 | SIB-200 topic (12 languages; M4 trains on *other* topic datasets) | **74.4%** (M4) | 70.8% | – |
 | AG News topic | 77.3% (M5) | **92.0%** | 88.0% |
@@ -123,8 +123,10 @@ flowchart LR
 | M2 + fine-tune | typed-decisions train split | ties Jev on typed-decisions |
 | M3 | + 4.7k teacher-labeled synthetic decisions | +9.6 points zero-shot on typed-decisions |
 | **M4** | from M2 + balanced sampling, 3× synthetic, topic data (2 seeds) | SIB-200 74.4%, above Laya; **published on Hugging Face** |
-| **M5** | from M4 + 10k operational decisions (run logs; next action, outcome, risk) | typed-decisions zero-shot 43.0%, no regressions; **published on Hugging Face** |
-| **M6** | from M5 + 5.5k contrastive minimal pairs + null-evidence training | **the best on typed-decisions (47.1%)**; the answer collapse is broken on 3 of 5 choice questions |
+| **M5** | from M4 + 10k operational decisions (run logs; next action, outcome, risk) | typed-decisions zero-shot 43.0%, no regressions |
+| M6 | from M5 + 5.5k contrastive minimal pairs + null-evidence training | 47.1%; the answer collapse is broken on 3 of 5 choice questions |
+| **M6-pairs** | ablation: the minimal pairs only | **46.9%, and genuinely reads the state** (empty-state agreement 93% → 52%); **published on Hugging Face** |
+| M7 | + 7.4k targeted pairs | 48.6%, but partly by shifting its default answer (empty-state agreement 76%) |
 
 ## Reproduce
 

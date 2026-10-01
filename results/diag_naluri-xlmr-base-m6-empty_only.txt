@@ -1,0 +1,24 @@
+Loading weights:   0%|          | 0/199 [00:00<?, ?it/s]Loading weights: 100%|██████████| 199/199 [00:00<00:00, 22514.74it/s]
+[transformers] Token indices sequence length is longer than the specified maximum sequence length for this model (592 > 512). Running this sequence through the model will result in indexing errors
+choice  accuracy 0.322 | same answer as with an EMPTY state: 46%
+noul    accuracy 0.585 | same answer as with an EMPTY state: 78%
+score   accuracy 0.399 | same answer as with an EMPTY state: 65%
+overall accuracy 0.431
+  agent_trace_observability / action
+    gold {'human_review': 36, 'continue': 31, 'observe': 31, 'stop': 2}
+    pred {'continue': 85, 'human_review': 13, 'observe': 2}
+  agent_trace_observability / outcome
+    gold {'success': 50, 'partial': 26, 'harmful': 19, 'failure': 5}
+    pred {'partial': 81, 'success': 17, 'failure': 2}
+  customer_service / action
+    gold {'escalate_to_human': 52, 'request_information': 24, 'answer_directly': 17, 'execute_refund': 7}
+    pred {'escalate_to_human': 100}
+  customer_service / category
+    gold {'billing': 38, 'delivery': 20, 'technical': 20, 'account': 18, 'refund': 4}
+    pred {'billing': 74, 'delivery': 12, 'technical': 8, 'account': 6}
+  invoice_processing / disposition
+    gold {'approve': 45, 'manual_review': 38, 'hold': 12, 'reject': 5}
+    pred {'hold': 100}
+  security_incidents / disposition
+    gold {'investigate': 74, 'contain': 15, 'monitor': 8, 'close_benign': 3}
+    pred {'close_benign': 85, 'contain': 15}

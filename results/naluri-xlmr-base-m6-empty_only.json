@@ -1,0 +1,178 @@
+{
+  "amazon_score": {
+    "n": 900,
+    "random": 0.2,
+    "naluri": {
+      "acc": 0.568,
+      "ece": 0.064,
+      "p50_ms": 4.9,
+      "per_lang": {
+        "de": 0.553,
+        "en": 0.6,
+        "es": 0.64,
+        "fr": 0.58,
+        "ja": 0.533,
+        "zh": 0.5
+      },
+      "score_mae": 0.573
+    }
+  },
+  "belebele_unseen_task": {
+    "n": 1791,
+    "random": 0.25,
+    "naluri": {
+      "acc": 0.343,
+      "ece": 0.123,
+      "p50_ms": 5.2,
+      "per_lang": {
+        "amh_Ethi": 0.293,
+        "arb_Arab": 0.356,
+        "eng_Latn": 0.353,
+        "hin_Deva": 0.356,
+        "ind_Latn": 0.302,
+        "jav_Latn": 0.322,
+        "rus_Cyrl": 0.389,
+        "swh_Latn": 0.356,
+        "tha_Thai": 0.43,
+        "vie_Latn": 0.353,
+        "yor_Latn": 0.221,
+        "zho_Hans": 0.383
+      },
+      "order_consistency": 0.677
+    }
+  },
+  "massive_heldout_langs": {
+    "n": 1000,
+    "random": 0.125,
+    "naluri": {
+      "acc": 0.754,
+      "ece": 0.038,
+      "p50_ms": 4.8,
+      "per_lang": {
+        "am": 0.755,
+        "jv": 0.745,
+        "km": 0.85,
+        "sw": 0.67,
+        "tl": 0.75
+      },
+      "order_consistency": 0.91
+    }
+  },
+  "massive_seen_langs": {
+    "n": 1000,
+    "random": 0.125,
+    "naluri": {
+      "acc": 0.926,
+      "ece": 0.06,
+      "p50_ms": 4.9,
+      "per_lang": {
+        "de": 0.9,
+        "en": 0.925,
+        "es": 0.945,
+        "fr": 0.905,
+        "id": 0.955
+      },
+      "order_consistency": 0.977
+    }
+  },
+  "sentiment_new_domain": {
+    "n": 1050,
+    "random": 0.333,
+    "naluri": {
+      "acc": 0.635,
+      "ece": 0.139,
+      "p50_ms": 4.6,
+      "per_lang": {
+        "arabic": 0.607,
+        "english": 0.627,
+        "hindi": 0.607,
+        "indonesian": 0.873,
+        "italian": 0.56,
+        "malay": 0.527,
+        "portuguese": 0.647
+      },
+      "order_consistency": 0.873
+    }
+  },
+  "sib200_unseen_task": {
+    "n": 2448,
+    "random": 0.143,
+    "naluri": {
+      "acc": 0.735,
+      "ece": 0.076,
+      "p50_ms": 4.8,
+      "per_lang": {
+        "amh_Ethi": 0.647,
+        "arb_Arab": 0.804,
+        "eng_Latn": 0.828,
+        "hin_Deva": 0.775,
+        "ind_Latn": 0.804,
+        "jav_Latn": 0.706,
+        "rus_Cyrl": 0.799,
+        "swh_Latn": 0.691,
+        "tha_Thai": 0.828,
+        "vie_Latn": 0.828,
+        "yor_Latn": 0.304,
+        "zho_Hans": 0.809
+      },
+      "order_consistency": 0.947
+    }
+  },
+  "xcopa_unseen_task": {
+    "n": 5500,
+    "random": 0.5,
+    "naluri": {
+      "acc": 0.572,
+      "ece": 0.053,
+      "p50_ms": 4.6,
+      "per_lang": {
+        "et": 0.572,
+        "ht": 0.53,
+        "id": 0.59,
+        "it": 0.576,
+        "qu": 0.492,
+        "sw": 0.534,
+        "ta": 0.592,
+        "th": 0.622,
+        "tr": 0.58,
+        "vi": 0.592,
+        "zh": 0.608
+      },
+      "order_consistency": 0.903
+    }
+  },
+  "xnli_heldout_langs": {
+    "n": 1000,
+    "random": 0.333,
+    "naluri": {
+      "acc": 0.579,
+      "ece": 0.054,
+      "p50_ms": 4.8,
+      "per_lang": {
+        "bg": 0.62,
+        "el": 0.575,
+        "sw": 0.565,
+        "th": 0.625,
+        "ur": 0.51
+      },
+      "order_consistency": 0.933
+    }
+  },
+  "xnli_seen_langs": {
+    "n": 1000,
+    "random": 0.333,
+    "naluri": {
+      "acc": 0.635,
+      "ece": 0.05,
+      "p50_ms": 4.9,
+      "per_lang": {
+        "de": 0.635,
+        "en": 0.65,
+        "es": 0.65,
+        "fr": 0.65,
+        "ru": 0.59
+      },
+      "order_consistency": 0.92
+    }
+  }
+}

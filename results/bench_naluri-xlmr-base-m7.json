@@ -1,0 +1,46 @@
+{
+  "typed_decisions": {
+    "published": {
+      "Jev 1.13.0 (published)": 0.727,
+      "Laya fine-tuned (published)": 0.766,
+      "Laya-multilingual zero-shot (published)": 0.342,
+      "teacher self-agreement": 0.735
+    },
+    "naluri": {
+      "acc": 0.486,
+      "n_decisions": 2000,
+      "ece": 0.072,
+      "p50_ms_per_case": 30.7,
+      "by_type": {
+        "choice": 0.428,
+        "noul": 0.602,
+        "score": 0.443
+      },
+      "by_group": {
+        "agent_trace_observability": 0.46,
+        "customer_service": 0.582,
+        "invoice_processing": 0.518,
+        "security_incidents": 0.384
+      },
+      "score_mae": 0.52
+    }
+  },
+  "ag_news": {
+    "published": {
+      "Jev 1.13.0 (published)": 0.91,
+      "Laya routed (published)": 0.95
+    },
+    "naluri": {
+      "acc": 0.745,
+      "n_decisions": 2000,
+      "ece": 0.039,
+      "p50_ms_per_case": 4.7,
+      "by_type": {
+        "choice": 0.745
+      },
+      "by_group": {
+        "ag_news": 0.745
+      }
+    }
+  }
+}

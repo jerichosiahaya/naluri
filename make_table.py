@@ -37,7 +37,9 @@ runs = {"M0": load("naluri-xlmr-base-m0.json", "naluri-xlmr-base-m0_new_evals.js
         "M3": load("naluri-xlmr-base-m3.json"),
         "M4": load("naluri-xlmr-base-m4.json"),  # mean of 2 seeds
         "M5": load("naluri-xlmr-base-m5.json"),
-        "M6": load("naluri-xlmr-base-m6.json")}
+        "M6": load("naluri-xlmr-base-m6.json"),
+        "M6-pairs": load("naluri-xlmr-base-m6-pairs_only.json"),
+        "M7": load("naluri-xlmr-base-m7.json")}
 laya = load("naluri-xlmr-base-m1.json")
 
 

@@ -88,6 +88,23 @@ Each group has:
 Do NOT include the answers.
 
 Return JSON: {{"groups": [{{"questions": {{...}}, "states": [<state>, <state>, <state>]}}, ...]}}"""
+# Targeted pairs (M7): decision archetypes the model still collapses on. Domains avoid typed-decisions' own
+# workflows (invoices, customer support), so the benchmark stays zero-shot for its domains.
+FOCUS = {
+    "dispositions": ("approval dispositions: approve / hold / manual review / reject (4 options, pick the fitting "
+                     "subset); the right one must depend on amounts vs limits, missing documents, duplicates, "
+                     "mismatches, policy flags and approver status",
+                     ["expense report approvals", "purchase order approvals", "loan applications", "insurance claims",
+                      "vendor onboarding", "grant applications", "refund-free warranty claims for field equipment",
+                      "travel booking approvals", "overtime requests", "procurement contract renewals"]),
+    "responses": ("request handling actions: answer directly / ask for more information / escalate to a human "
+                  "specialist / take an automated action (e.g. reset, reschedule, reissue); the right one must depend "
+                  "on what is already known, missing details, risk, sentiment and permissions",
+                  ["HR employee requests", "IT helpdesk requests from employees", "tenant maintenance requests",
+                   "patient portal messages to a clinic", "student requests to a university office",
+                   "B2B partner integration requests", "government permit inquiries", "internal facilities requests",
+                   "bank branch internal requests", "event attendee requests"]),
+}
 FORMATS = ["a nested JSON object with realistic fields, ids, numbers, timestamps and statuses",
            "a nested JSON object with a list of recent events or line items",
            "a plain-text message or email written by a person",
@@ -234,11 +251,16 @@ def cmd_gen_pairs(args):
     langs = [l for l, w in LANGS for _ in range(w)]
     per_call = 2
     domains = OPS_DOMAINS + [d for d in DOMAINS if d not in ("news article classification", "research paper review")]
+    focus_text = ""
+    if args.focus:
+        focus_text, domains = FOCUS[args.focus]
+        focus_text = (f"\nEvery group must include one choice question about {focus_text}. Across the versions, "
+                      "each option should be the correct one at least once.")
     jobs = [(rng.choice(domains), rng.choice(langs), rng.choice(OPS_FORMATS + FORMATS[:2]), i)
             for i in range(args.cases // per_call)]
 
     def job(domain, lang, fmt, i):
-        reply = llm.parse_json(llm.chat(PAIRS_PROMPT.format(n=per_call, domain=domain, lang=lang, fmt=fmt),
+        reply = llm.parse_json(llm.chat(PAIRS_PROMPT.format(n=per_call, domain=domain, lang=lang, fmt=fmt) + focus_text,
                                         temperature=1.0, max_tokens=6000, seed_tag=f"pairs{args.seed}gen{i}"))
         cases = []
         for g_i, g in enumerate((reply or {}).get("groups", [])):
@@ -347,6 +369,7 @@ if __name__ == "__main__":
     ap.add_argument("--teacher", default="azure_ai/deepseek-v4-pro", help="labeling model (label command)")
     ap.add_argument("--rotations", type=int, default=1, help="differently-ordered labeling passes per case")
     ap.add_argument("--profile", default="general", choices=["general", "ops", "pairs"], help="generation profile (gen)")
+    ap.add_argument("--focus", choices=["dispositions", "responses"], help="pairs: target one decision archetype")
     ap.add_argument("--out-dir", default=str(OUT), help="where cases/labels/records live")
     ap.add_argument("--task-prefix", default="synth", help="task name prefix in exported records")
     ap.add_argument("--contrastive-only", action="store_true",
