@@ -126,7 +126,7 @@ flowchart LR
 | **M5** | from M4 + 10k operational decisions (run logs; next action, outcome, risk) | typed-decisions zero-shot 43.0%, no regressions |
 | M6 | from M5 + 5.5k contrastive minimal pairs + null-evidence training | 47.1%; the answer collapse is broken on 3 of 5 choice questions |
 | **M6-pairs** | ablation: the minimal pairs only | **46.9%, and genuinely reads the state** (empty-state agreement 93% → 52%); **published on Hugging Face** |
-| M7 | + 7.4k targeted pairs | 48.6%, but partly by shifting its default answer (empty-state agreement 76%) |
+| M7 | + 7.4k targeted pairs | 48.6%, but partly by shifting its default answer (empty-state agreement 76%); available as the experimental [`m7` branch](https://huggingface.co/jerichosiahaya/naluri-xlmr-base/tree/m7) |
 
 ## Reproduce
 
