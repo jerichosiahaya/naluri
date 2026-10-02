@@ -370,6 +370,7 @@ For each typed-decisions choice question, M5's answer mix vs the gold mix (100 c
 ## Limitations
 
 - **Single seed per run.** Differences of 1–2 points may be noise.
+- **Yes/no questions about structured JSON react only weakly to the data** (M6-pairs). "Should this transfer be held for fraud review?" scored 0.09 for a Rp 45M transfer from a 2-day-old account on a new device vs 0.07 for a normal one, and "does this backup run need review?" scored 0.17 for a failed run with 5 errors vs 0.05 for a clean one. Yes/no on *text* is strong (cancellation threat 0.91 vs thank-you 0.02; "payment page down" urgent 0.98 vs a shipping question 0.12). This matches the empty-state diagnosis: noul answers still lean on priors.
 - **Unseen topic classification still trails Laya** (67.5% vs 70.8%), especially in low-resource languages like Yoruba and Swahili.
 - **Reasoning tasks are only modestly above chance:** XCOPA 58.6% (random 50%) and Belebele 34.8% (random 25%). RACE reading comprehension also plateaued at about 46% on validation.
 - **512-token limit** (XLM-R). Long documents are truncated.

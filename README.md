@@ -44,6 +44,7 @@ All numbers were measured in this repo (single runs). Jev was called live throug
 - On typed-decisions, the fine-tuned model and Jev are a **statistical tie** (exact McNemar test, p = 0.29).
 - **Where Naluri wins:** speed, cost ($0 per call, self-hosted), calibrated confidence on the tasks it knows, robustness to option order, and cross-lingual transfer.
 - **Where it doesn't yet:** zero-shot accuracy on brand-new task types, where Jev is clearly ahead. Closing that gap is the current work (see *Roadmap*).
+- **Known weak spot:** yes/no questions about structured JSON (e.g. "should this transfer be held for fraud review?") react only weakly to the data. Yes/no on text works well.
 
 ## Quickstart
 
@@ -88,6 +89,18 @@ s1.predict(tok, model, {"order": {"status": "delayed", "days_late": 6}},
            {"late": {"type": "noul", "instructions": "Is the order late?"}}, device="cpu")
 # {'late': {'false': ..., 'true': ...}}
 ```
+
+## Demo
+
+A small web demo (Gradio) for asking typed questions in the browser:
+
+```bash
+uv pip install gradio
+.venv/bin/python space/app.py            # http://127.0.0.1:7860
+.venv/bin/python space/app.py --share    # + a temporary public link (works while your machine runs it)
+```
+
+The same folder is ready to deploy as a Hugging Face Space. Hosting a Gradio Space currently requires a Hugging Face PRO account.
 
 ## How it works
 
