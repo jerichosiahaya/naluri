@@ -1,0 +1,3114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Naluri vs Laya Chess</title>
+<style>
+  :root { --bg:#0f1115; --panel:#181b22; --line:#2a2f3a; --ink:#f2f3f7; --ink2:#a7adbd; --muted:#6f7687;
+    --light:#e9dcc3; --dark:#a97e5a; --hl:#f4d35e; --chk:#e5484d; --naluri:#7c9cff; --laya:#ffb35c; --bar:#7c9cff; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif; }
+  .wrap { max-width:1080px; margin:0 auto; padding:28px 28px 20px; }
+  h1 { margin:0; font-size:28px; letter-spacing:-.2px; }
+  .sub { color:var(--ink2); margin:4px 0 18px; font-size:15px; }
+  .grid { display:grid; grid-template-columns: 600px 1fr; gap:22px; align-items:start; }
+  @media (max-width:980px){ .grid{ grid-template-columns:1fr; } .board{ width:min(92vw,600px); height:min(92vw,600px);} }
+  .players { display:flex; justify-content:space-between; margin-bottom:8px; font-weight:600; }
+  .tag { display:inline-flex; align-items:center; gap:8px; }
+  .dot { width:12px; height:12px; border-radius:50%; display:inline-block; }
+  .board { width:600px; height:600px; display:grid; grid-template-columns:repeat(8,1fr); grid-template-rows:repeat(8,1fr); border-radius:10px; overflow:hidden;
+    box-shadow:0 10px 40px rgba(0,0,0,.45); }
+  .sq { position:relative; display:flex; align-items:center; justify-content:center; font-size:56px; line-height:1;
+    user-select:none; font-family:"DejaVu Sans","Noto Sans Symbols 2","Segoe UI Symbol",sans-serif; }
+  .sq.l { background:var(--light); } .sq.d { background:var(--dark); }
+  .sq.hl::after { content:""; position:absolute; inset:0; background:var(--hl); opacity:.42; }
+  .sq.chk { box-shadow: inset 0 0 0 5px var(--chk); background-image: radial-gradient(circle, rgba(229,72,77,.55), transparent 70%); }
+  .pc { position:relative; z-index:1; }
+  .pc.w { color:#fff; text-shadow:0 0 2px #000,0 0 2px #000,0 2px 3px rgba(0,0,0,.6); }
+  .pc.b { color:#14161b; text-shadow:0 1px 1px rgba(255,255,255,.25); }
+  .coord { position:absolute; font-size:11px; font-weight:700; opacity:.6; color:#2b2016; }
+  .coord.f { right:4px; bottom:2px; } .coord.r { left:4px; top:2px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:14px; }
+  .label { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.6px; margin-bottom:6px; }
+  .who { font-weight:700; font-size:17px; }
+  .move { font-size:34px; font-weight:800; margin:4px 0 2px; letter-spacing:-.5px; }
+  .desc { color:var(--ink2); min-height:22px; }
+  .bar { height:10px; border-radius:5px; background:#262b36; overflow:hidden; margin:8px 0 4px; }
+  .bar > div { height:100%; border-radius:5px; background:var(--bar); transition:width .25s; }
+  .alt { display:grid; grid-template-columns:62px 1fr 44px; gap:8px; align-items:center; font-size:13px; margin:6px 0; color:var(--ink2); }
+  .alt .t { height:8px; background:#262b36; border-radius:4px; overflow:hidden; } .alt .t > div { height:100%; background:#4b5367; }
+  .alt .v { text-align:right; font-variant-numeric:tabular-nums; }
+  .mat { display:flex; height:10px; border-radius:5px; overflow:hidden; margin:8px 0 4px; }
+  .mat .w { background:#f2f3f7; } .mat .b { background:#3a4050; }
+  .moves { max-height:150px; overflow:auto; font:13px/1.7 ui-monospace,Menlo,monospace; color:var(--ink2); }
+  .moves span { padding:1px 4px; border-radius:4px; } .moves .cur { background:var(--hl); color:#111; font-weight:700; }
+  .ctrls { display:flex; gap:8px; align-items:center; margin-top:14px; flex-wrap:wrap; }
+  button { background:var(--panel); color:var(--ink); border:1px solid var(--line); border-radius:8px; padding:7px 12px; font:inherit; cursor:pointer; }
+  input[type=range] { flex:1; min-width:160px; accent-color:var(--naluri); }
+  .end { position:fixed; inset:0; z-index:10; display:none; align-items:center; justify-content:center; background:rgba(8,9,12,.78); }
+  .end .box { background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:34px 44px; text-align:center; }
+  .end .big { font-size:46px; font-weight:800; } .end .small { color:var(--ink2); margin-top:8px; font-size:16px; }
+  .foot { color:var(--muted); font-size:12px; margin-top:10px; }
+  body.rec .ctrls { display:none; }
+  body.rec { min-height:100vh; display:flex; align-items:center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Naluri vs Laya: System One chess ♟️</h1>
+  <div class="sub">Neither model was trained on chess. Every move is a <b>choice</b> question over the legal moves,
+    described in plain English. Showcase game, the best of 8 played.</div>
+  <div class="grid">
+    <div>
+      <div class="players">
+        <span class="tag"><span class="dot" style="background:#fff"></span><span style="color:var(--naluri)" id="wName"></span></span>
+        <span class="tag"><span style="color:var(--laya)" id="bName"></span><span class="dot" style="background:#14161b;border:1px solid #555"></span></span>
+      </div>
+      <div class="board" id="board"></div>
+      <div class="ctrls">
+        <button id="first">⏮</button><button id="prev">◀</button><button id="play">▶ Play</button>
+        <button id="next">▶</button><button id="last">⏭</button>
+        <input type="range" id="slider" min="0" value="0">
+        <select id="speed"><option value="1400">slow</option><option value="800" selected>normal</option><option value="400">fast</option></select>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="label" id="moveNo">Start</div>
+        <div class="who" id="who">Press play</div>
+        <div class="move" id="san">&nbsp;</div>
+        <div class="desc" id="desc"></div>
+        <div class="bar"><div id="conf" style="width:0"></div></div>
+        <div class="foot" id="confText"></div>
+      </div>
+      <div class="card">
+        <div class="label">Also considered</div>
+        <div id="alts"><div class="foot">–</div></div>
+      </div>
+      <div class="card">
+        <div class="label">Material <span id="matText" style="float:right;text-transform:none"></span></div>
+        <div class="mat"><div class="w" id="matW" style="width:50%"></div><div class="b" id="matB" style="width:50%"></div></div>
+        <div class="label" style="margin-top:12px">Moves</div>
+        <div class="moves" id="moves"></div>
+      </div>
+    </div>
+  </div>
+  <div class="foot">Naluri: github.com/jerichosiahaya/naluri · Laya: convaiinnovations/laya · move = model's pick in its final
+    round (positions with many legal moves use a knockout of 12-move groups)</div>
+</div>
+<div class="end" id="end"><div class="box"><div class="big" id="endBig"></div><div class="small" id="endSmall"></div></div></div>
+
+<script>
+const DATA = {
+ "white": "Naluri (M6-pairs)",
+ "black": "Laya (English)",
+ "result": "1-0",
+ "termination": "checkmate",
+ "seed": 7,
+ "start_fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+ "moves": [
+  {
+   "san": "f3",
+   "desc": "pawn from f2 to f3",
+   "prob": 0.505,
+   "legal": 20,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "f4",
+     "desc": "pawn from f2 to f4",
+     "prob": 0.495
+    }
+   ],
+   "ply": 1,
+   "color": "white",
+   "player": "Naluri (M6-pairs)",
+   "uci": "f2f3",
+   "ms": 40,
+   "fen": "rnbqkbnr/pppppppp/8/8/8/5P2/PPPPP1PP/RNBQKBNR b KQkq - 0 1",
+   "check": false,
+   "material": {
+    "white": 39,
+    "black": 39
+   }
+  },
+  {
+   "san": "Nh6",
+   "desc": "knight from g8 to h6",
+   "prob": 0.555,
+   "legal": 20,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Nf6",
+     "desc": "knight from g8 to f6",
+     "prob": 0.445
+    }
+   ],
+   "ply": 2,
+   "color": "black",
+   "player": "Laya (English)",
+   "uci": "g8h6",
+   "ms": 124,
+   "fen": "rnbqkb1r/pppppppp/7n/8/8/5P2/PPPPP1PP/RNBQKBNR w KQkq - 1 2",
+   "check": false,
+   "material": {
+    "white": 39,
+    "black": 39
+   }
+  },
+  {
+   "san": "f4",
+   "desc": "pawn from f3 to f4",
+   "prob": 0.591,
+   "legal": 19,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "h3",
+     "desc": "pawn from h2 to h3",
+     "prob": 0.409
+    }
+   ],
+   "ply": 3,
+   "color": "white",
+   "player": "Naluri (M6-pairs)",
+   "uci": "f3f4",
+   "ms": 37,
+   "fen": "rnbqkb1r/pppppppp/7n/8/5P2/8/PPPPP1PP/RNBQKBNR b KQkq - 0 2",
+   "check": false,
+   "material": {
+    "white": 39,
+    "black": 39
+   }
+  },
+  {
+   "san": "Ng4",
+   "desc": "knight from h6 to g4",
+   "prob": 0.644,
+   "legal": 20,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "f5",
+     "desc": "pawn from f7 to f5",
+     "prob": 0.356
+    }
+   ],
+   "ply": 4,
+   "color": "black",
+   "player": "Laya (English)",
+   "uci": "h6g4",
+   "ms": 121,
+   "fen": "rnbqkb1r/pppppppp/8/8/5Pn1/8/PPPPP1PP/RNBQKBNR w KQkq - 1 3",
+   "check": false,
+   "material": {
+    "white": 39,
+    "black": 39
+   }
+  },
+  {
+   "san": "b3",
+   "desc": "pawn from b2 to b3",
+   "prob": 0.532,
+   "legal": 18,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "h4",
+     "desc": "pawn from h2 to h4",
+     "prob": 0.468
+    }
+   ],
+   "ply": 5,
+   "color": "white",
+   "player": "Naluri (M6-pairs)",
+   "uci": "b2b3",
+   "ms": 37,
+   "fen": "rnbqkb1r/pppppppp/8/8/5Pn1/1P6/P1PPP1PP/RNBQKBNR b KQkq - 0 3",
+   "check": false,
+   "material": {
+    "white": 39,
+    "black": 39
+   }
+  },
+  {
+   "san": "Nf2",
+   "desc": "knight from g4 to f2",
+   "prob": 0.463,
+   "legal": 25,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Nf6",
+     "desc": "knight from g4 to f6",
+     "prob": 0.429
+    },
+    {
+     "san": "d6",
+     "desc": "pawn from d7 to d6",
+     "prob": 0.108
+    }
+   ],
+   "ply": 6,
+   "color": "black",
+   "player": "Laya (English)",
+   "uci": "g4f2",
+   "ms": 135,
+   "fen": "rnbqkb1r/pppppppp/8/8/5P2/1P6/P1PPPnPP/RNBQKBNR w KQkq - 1 4",
+   "check": false,
+   "material": {
+    "white": 39,
+    "black": 39
+   }
+  },
+  {
+   "san": "c3",
+   "desc": "pawn from c2 to c3",
+   "prob": 0.54,
+   "legal": 21,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "h4",
+     "desc": "pawn from h2 to h4",
+     "prob": 0.46
+    }
+   ],
+   "ply": 7,
+   "color": "white",
+   "player": "Naluri (M6-pairs)",
+   "uci": "c2c3",
+   "ms": 35,
+   "fen": "rnbqkb1r/pppppppp/8/8/5P2/1PP5/P2PPnPP/RNBQKBNR b KQkq - 0 4",
+   "check": false,
+   "material": {
+    "white": 39,
+    "black": 39
+   }
+  },
+  {
+   "san": "Ng4",
+   "desc": "knight from f2 to g4",
+   "prob": 0.734,
+   "legal": 25,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Nh3",
+     "desc": "knight from f2 to h3",
+     "prob": 0.198
+    },
+    {
+     "san": "e5",
+     "desc": "pawn from e7 to e5",
+     "prob": 0.068
+    }
+   ],
+   "ply": 8,
+   "color": "black",
+   "player": "Laya (English)",
+   "uci": "f2g4",
+   "ms": 145,
+   "fen": "rnbqkb1r/pppppppp/8/8/5Pn1/1PP5/P2PP1PP/RNBQKBNR w KQkq - 1 5",
+   "check": false,
+   "material": {
+    "white": 39,
+    "black": 39
+   }
+  },
+  {
+   "san": "h3",
+   "desc": "pawn from h2 to h3",
+   "prob": 0.548,
+   "legal": 18,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "f5",
+     "desc": "pawn from f4 to f5",
+     "prob": 0.452
+    }
+   ],
+   "ply": 9,
+   "color": "white",
+   "player": "Naluri (M6-pairs)",
+   "uci": "h2h3",
+   "ms": 33,
+   "fen": "rnbqkb1r/pppppppp/8/8/5Pn1/1PP4P/P2PP1P1/RNBQKBNR b KQkq - 0 5",
+   "check": false,
+   "material": {
+    "white": 39,
+    "black": 39
+   }
+  },
+  {
+   "san": "Nf6",
+   "desc": "knight from g4 to f6",
+   "prob": 0.671,
+   "legal": 25,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Nh6",
+     "desc": "knight from g4 to h6",
+     "prob": 0.239
+    },
+    {
+     "san": "Ne3",
+     "desc": "knight from g4 to e3",
+     "prob": 0.09
+    }
+   ],
+   "ply": 10,
+   "color": "black",
+   "player": "Laya (English)",
+   "uci": "g4f6",
+   "ms": 140,
+   "fen": "rnbqkb1r/pppppppp/5n2/8/5P2/1PP4P/P2PP1P1/RNBQKBNR w KQkq - 1 6",
+   "check": false,
+   "material": {
+    "white": 39,
+    "black": 39
+   }
+  },
+  {
+   "san": "g4",
+   "desc": "pawn from g2 to g4",
+   "prob": 0.509,
+   "legal": 19,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "c4",
+     "desc": "pawn from c3 to c4",
+     "prob": 0.491
+    }
+   ],
+   "ply": 11,
+   "color": "white",
+   "player": "Naluri (M6-pairs)",
+   "uci": "g2g4",
+   "ms": 39,
+   "fen": "rnbqkb1r/pppppppp/5n2/8/5PP1/1PP4P/P2PP3/RNBQKBNR b KQkq - 0 6",
+   "check": false,
+   "material": {
+    "white": 39,
+    "black": 39
+   }
+  },
+  {
+   "san": "Nc6",
+   "desc": "knight from b8 to c6",
+   "prob": 0.596,
+   "legal": 22,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Ne4",
+     "desc": "knight from f6 to e4",
+     "prob": 0.404
+    }
+   ],
+   "ply": 12,
+   "color": "black",
+   "player": "Laya (English)",
+   "uci": "b8c6",
+   "ms": 129,
+   "fen": "r1bqkb1r/pppppppp/2n2n2/8/5PP1/1PP4P/P2PP3/RNBQKBNR w KQkq - 1 7",
+   "check": false,
+   "material": {
+    "white": 39,
+    "black": 39
+   }
+  },
+  {
+   "san": "c4",
+   "desc": "pawn from c3 to c4",
+   "prob": 0.549,
+   "legal": 19,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "h4",
+     "desc": "pawn from h3 to h4",
+     "prob": 0.451
+    }
+   ],
+   "ply": 13,
+   "color": "white",
+   "player": "Naluri (M6-pairs)",
+   "uci": "c3c4",
+   "ms": 36,
+   "fen": "r1bqkb1r/pppppppp/2n2n2/8/2P2PP1/1P5P/P2PP3/RNBQKBNR b KQkq - 0 7",
+   "check": false,
+   "material": {
+    "white": 39,
+    "black": 39
+   }
+  },
+  {
+   "san": "Rg8",
+   "desc": "rook from h8 to g8",
+   "prob": 0.857,
+   "legal": 24,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Ne4",
+     "desc": "knight from f6 to e4",
+     "prob": 0.143
+    }
+   ],
+   "ply": 14,
+   "color": "black",
+   "player": "Laya (English)",
+   "uci": "h8g8",
+   "ms": 134,
+   "fen": "r1bqkbr1/pppppppp/2n2n2/8/2P2PP1/1P5P/P2PP3/RNBQKBNR w KQq - 1 8",
+   "check": false,
+   "material": {
+    "white": 39,
+    "black": 39
+   }
+  },
+  {
+   "san": "Qc2",
+   "desc": "queen from d1 to c2",
+   "prob": 0.501,
+   "legal": 20,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "b4",
+     "desc": "pawn from b3 to b4",
+     "prob": 0.499
+    }
+   ],
+   "ply": 15,
+   "color": "white",
+   "player": "Naluri (M6-pairs)",
+   "uci": "d1c2",
+   "ms": 39,
+   "fen": "r1bqkbr1/pppppppp/2n2n2/8/2P2PP1/1P5P/P1QPP3/RNB1KBNR b KQq - 2 8",
+   "check": false,
+   "material": {
+    "white": 39,
+    "black": 39
+   }
+  },
+  {
+   "san": "Rh8",
+   "desc": "rook from g8 to h8",
+   "prob": 0.605,
+   "legal": 23,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Nh5",
+     "desc": "knight from f6 to h5",
+     "prob": 0.396
+    }
+   ],
+   "ply": 16,
+   "color": "black",
+   "player": "Laya (English)",
+   "uci": "g8h8",
+   "ms": 137,
+   "fen": "r1bqkb1r/pppppppp/2n2n2/8/2P2PP1/1P5P/P1QPP3/RNB1KBNR w KQq - 3 9",
+   "check": false,
+   "material": {
+    "white": 39,
+    "black": 39
+   }
+  },
+  {
+   "san": "h4",
+   "desc": "pawn from h3 to h4",
+   "prob": 0.365,
+   "legal": 28,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "c5",
+     "desc": "pawn from c4 to c5",
+     "prob": 0.322
+    },
+    {
+     "san": "Qxh7",
+     "desc": "queen from c2 to h7, captures a pawn",
+     "prob": 0.313
+    }
+   ],
+   "ply": 17,
+   "color": "white",
+   "player": "Naluri (M6-pairs)",
+   "uci": "h3h4",
+   "ms": 49,
+   "fen": "r1bqkb1r/pppppppp/2n2n2/8/2P2PPP/1P6/P1QPP3/RNB1KBNR b KQq - 0 9",
+   "check": false,
+   "material": {
+    "white": 39,
+    "black": 39
+   }
+  },
+  {
+   "san": "Nxg4",
+   "desc": "knight from f6 to g4, captures a pawn",
+   "prob": 0.651,
+   "legal": 24,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Ne4",
+     "desc": "knight from f6 to e4",
+     "prob": 0.349
+    }
+   ],
+   "ply": 18,
+   "color": "black",
+   "player": "Laya (English)",
+   "uci": "f6g4",
+   "ms": 130,
+   "fen": "r1bqkb1r/pppppppp/2n5/8/2P2PnP/1P6/P1QPP3/RNB1KBNR w KQq - 0 10",
+   "check": false,
+   "material": {
+    "white": 38,
+    "black": 39
+   }
+  },
+  {
+   "san": "Qxh7",
+   "desc": "queen from c2 to h7, captures a pawn",
+   "prob": 0.428,
+   "legal": 29,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Qg6",
+     "desc": "queen from c2 to g6",
+     "prob": 0.293
+    },
+    {
+     "san": "c5",
+     "desc": "pawn from c4 to c5",
+     "prob": 0.279
+    }
+   ],
+   "ply": 19,
+   "color": "white",
+   "player": "Naluri (M6-pairs)",
+   "uci": "c2h7",
+   "ms": 53,
+   "fen": "r1bqkb1r/pppppppQ/2n5/8/2P2PnP/1P6/P2PP3/RNB1KBNR b KQq - 0 10",
+   "check": false,
+   "material": {
+    "white": 38,
+    "black": 38
+   }
+  },
+  {
+   "san": "Rg8",
+   "desc": "rook from h8 to g8",
+   "prob": 0.538,
+   "legal": 26,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Nb8",
+     "desc": "knight from c6 to b8",
+     "prob": 0.287
+    },
+    {
+     "san": "Na5",
+     "desc": "knight from c6 to a5",
+     "prob": 0.175
+    }
+   ],
+   "ply": 20,
+   "color": "black",
+   "player": "Laya (English)",
+   "uci": "h8g8",
+   "ms": 186,
+   "fen": "r1bqkbr1/pppppppQ/2n5/8/2P2PnP/1P6/P2PP3/RNB1KBNR w KQq - 1 11",
+   "check": false,
+   "material": {
+    "white": 38,
+    "black": 38
+   }
+  },
+  {
+   "san": "Qc2",
+   "desc": "queen from h7 to c2",
+   "prob": 0.398,
+   "legal": 31,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Qh6",
+     "desc": "queen from h7 to h6",
+     "prob": 0.328
+    },
+    {
+     "san": "Qh8",
+     "desc": "queen from h7 to h8",
+     "prob": 0.274
+    }
+   ],
+   "ply": 21,
+   "color": "white",
+   "player": "Naluri (M6-pairs)",
+   "uci": "h7c2",
+   "ms": 49,
+   "fen": "r1bqkbr1/ppppppp1/2n5/8/2P2PnP/1P6/P1QPP3/RNB1KBNR b KQq - 2 11",
+   "check": false,
+   "material": {
+    "white": 38,
+    "black": 38
+   }
+  },
+  {
+   "san": "Rh8",
+   "desc": "rook from g8 to h8",
+   "prob": 0.786,
+   "legal": 25,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Nh2",
+     "desc": "knight from g4 to h2",
+     "prob": 0.127
+    },
+    {
+     "san": "Ne3",
+     "desc": "knight from g4 to e3",
+     "prob": 0.087
+    }
+   ],
+   "ply": 22,
+   "color": "black",
+   "player": "Laya (English)",
+   "uci": "g8h8",
+   "ms": 139,
+   "fen": "r1bqkb1r/ppppppp1/2n5/8/2P2PnP/1P6/P1QPP3/RNB1KBNR w KQq - 3 12",
+   "check": false,
+   "material": {
+    "white": 38,
+    "black": 38
+   }
+  },
+  {
+   "san": "Qd3",
+   "desc": "queen from c2 to d3",
+   "prob": 0.351,
+   "legal": 29,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "f5",
+     "desc": "pawn from f4 to f5",
+     "prob": 0.342
+    },
+    {
+     "san": "c5",
+     "desc": "pawn from c4 to c5",
+     "prob": 0.306
+    }
+   ],
+   "ply": 23,
+   "color": "white",
+   "player": "Naluri (M6-pairs)",
+   "uci": "c2d3",
+   "ms": 53,
+   "fen": "r1bqkb1r/ppppppp1/2n5/8/2P2PnP/1P1Q4/P2PP3/RNB1KBNR b KQq - 4 12",
+   "check": false,
+   "material": {
+    "white": 38,
+    "black": 38
+   }
+  },
+  {
+   "san": "Rh7",
+   "desc": "rook from h8 to h7",
+   "prob": 0.64,
+   "legal": 29,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Nh6",
+     "desc": "knight from g4 to h6",
+     "prob": 0.183
+    },
+    {
+     "san": "Rh6",
+     "desc": "rook from h8 to h6",
+     "prob": 0.177
+    }
+   ],
+   "ply": 24,
+   "color": "black",
+   "player": "Laya (English)",
+   "uci": "h8h7",
+   "ms": 185,
+   "fen": "r1bqkb2/pppppppr/2n5/8/2P2PnP/1P1Q4/P2PP3/RNB1KBNR w KQq - 5 13",
+   "check": false,
+   "material": {
+    "white": 38,
+    "black": 38
+   }
+  },
+  {
+   "san": "Qc2",
+   "desc": "queen from d3 to c2",
+   "prob": 0.345,
+   "legal": 33,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "f5",
+     "desc": "pawn from f4 to f5",
+     "prob": 0.342
+    },
+    {
+     "san": "Qd5",
+     "desc": "queen from d3 to d5",
+     "prob": 0.313
+    }
+   ],
+   "ply": 25,
+   "color": "white",
+   "player": "Naluri (M6-pairs)",
+   "uci": "d3c2",
+   "ms": 52,
+   "fen": "r1bqkb2/pppppppr/2n5/8/2P2PnP/1P6/P1QPP3/RNB1KBNR b KQq - 6 13",
+   "check": false,
+   "material": {
+    "white": 38,
+    "black": 38
+   }
+  },
+  {
+   "san": "Rh8",
+   "desc": "rook from h7 to h8",
+   "prob": 0.518,
+   "legal": 28,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Rh6",
+     "desc": "rook from h7 to h6",
+     "prob": 0.308
+    },
+    {
+     "san": "Rh5",
+     "desc": "rook from h7 to h5",
+     "prob": 0.173
+    }
+   ],
+   "ply": 26,
+   "color": "black",
+   "player": "Laya (English)",
+   "uci": "h7h8",
+   "ms": 171,
+   "fen": "r1bqkb1r/ppppppp1/2n5/8/2P2PnP/1P6/P1QPP3/RNB1KBNR w KQq - 7 14",
+   "check": false,
+   "material": {
+    "white": 38,
+    "black": 38
+   }
+  },
+  {
+   "san": "d4",
+   "desc": "pawn from d2 to d4",
+   "prob": 0.383,
+   "legal": 29,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "a4",
+     "desc": "pawn from a2 to a4",
+     "prob": 0.369
+    },
+    {
+     "san": "Qd1",
+     "desc": "queen from c2 to d1",
+     "prob": 0.248
+    }
+   ],
+   "ply": 27,
+   "color": "white",
+   "player": "Naluri (M6-pairs)",
+   "uci": "d2d4",
+   "ms": 50,
+   "fen": "r1bqkb1r/ppppppp1/2n5/8/2PP1PnP/1P6/P1Q1P3/RNB1KBNR b KQq - 0 14",
+   "check": false,
+   "material": {
+    "white": 38,
+    "black": 38
+   }
+  },
+  {
+   "san": "Rh7",
+   "desc": "rook from h8 to h7",
+   "prob": 0.606,
+   "legal": 29,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Rg8",
+     "desc": "rook from h8 to g8",
+     "prob": 0.225
+    },
+    {
+     "san": "Rb8",
+     "desc": "rook from a8 to b8",
+     "prob": 0.169
+    }
+   ],
+   "ply": 28,
+   "color": "black",
+   "player": "Laya (English)",
+   "uci": "h8h7",
+   "ms": 176,
+   "fen": "r1bqkb2/pppppppr/2n5/8/2PP1PnP/1P6/P1Q1P3/RNB1KBNR w KQq - 1 15",
+   "check": false,
+   "material": {
+    "white": 38,
+    "black": 38
+   }
+  },
+  {
+   "san": "Rh3",
+   "desc": "rook from h1 to h3",
+   "prob": 0.416,
+   "legal": 33,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Qxh7",
+     "desc": "queen from c2 to h7, captures a rook",
+     "prob": 0.359
+    },
+    {
+     "san": "a4",
+     "desc": "pawn from a2 to a4",
+     "prob": 0.225
+    }
+   ],
+   "ply": 29,
+   "color": "white",
+   "player": "Naluri (M6-pairs)",
+   "uci": "h1h3",
+   "ms": 83,
+   "fen": "r1bqkb2/pppppppr/2n5/8/2PP1PnP/1P5R/P1Q1P3/RNB1KBN1 b Qq - 2 15",
+   "check": false,
+   "material": {
+    "white": 38,
+    "black": 38
+   }
+  },
+  {
+   "san": "Rh8",
+   "desc": "rook from h7 to h8",
+   "prob": 0.75,
+   "legal": 28,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Rh5",
+     "desc": "rook from h7 to h5",
+     "prob": 0.141
+    },
+    {
+     "san": "Rh6",
+     "desc": "rook from h7 to h6",
+     "prob": 0.109
+    }
+   ],
+   "ply": 30,
+   "color": "black",
+   "player": "Laya (English)",
+   "uci": "h7h8",
+   "ms": 187,
+   "fen": "r1bqkb1r/ppppppp1/2n5/8/2PP1PnP/1P5R/P1Q1P3/RNB1KBN1 w Qq - 3 16",
+   "check": false,
+   "material": {
+    "white": 38,
+    "black": 38
+   }
+  },
+  {
+   "san": "b4",
+   "desc": "pawn from b3 to b4",
+   "prob": 0.427,
+   "legal": 36,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "c5",
+     "desc": "pawn from c4 to c5",
+     "prob": 0.343
+    },
+    {
+     "san": "Rh2",
+     "desc": "rook from h3 to h2",
+     "prob": 0.23
+    }
+   ],
+   "ply": 31,
+   "color": "white",
+   "player": "Naluri (M6-pairs)",
+   "uci": "b3b4",
+   "ms": 54,
+   "fen": "r1bqkb1r/ppppppp1/2n5/8/1PPP1PnP/7R/P1Q1P3/RNB1KBN1 b Qq - 0 16",
+   "check": false,
+   "material": {
+    "white": 38,
+    "black": 38
+   }
+  },
+  {
+   "san": "Rh7",
+   "desc": "rook from h8 to h7",
+   "prob": 0.532,
+   "legal": 29,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Rg8",
+     "desc": "rook from h8 to g8",
+     "prob": 0.251
+    },
+    {
+     "san": "Nb8",
+     "desc": "knight from c6 to b8",
+     "prob": 0.217
+    }
+   ],
+   "ply": 32,
+   "color": "black",
+   "player": "Laya (English)",
+   "uci": "h8h7",
+   "ms": 179,
+   "fen": "r1bqkb2/pppppppr/2n5/8/1PPP1PnP/7R/P1Q1P3/RNB1KBN1 w Qq - 1 17",
+   "check": false,
+   "material": {
+    "white": 38,
+    "black": 38
+   }
+  },
+  {
+   "san": "Qb2",
+   "desc": "queen from c2 to b2",
+   "prob": 0.387,
+   "legal": 40,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "d5",
+     "desc": "pawn from d4 to d5",
+     "prob": 0.255
+    },
+    {
+     "san": "Rh1",
+     "desc": "rook from h3 to h1",
+     "prob": 0.189
+    },
+    {
+     "san": "a4",
+     "desc": "pawn from a2 to a4",
+     "prob": 0.169
+    }
+   ],
+   "ply": 33,
+   "color": "white",
+   "player": "Naluri (M6-pairs)",
+   "uci": "c2b2",
+   "ms": 60,
+   "fen": "r1bqkb2/pppppppr/2n5/8/1PPP1PnP/7R/PQ2P3/RNB1KBN1 b Qq - 2 17",
+   "check": false,
+   "material": {
+    "white": 38,
+    "black": 38
+   }
+  },
+  {
+   "san": "Rh8",
+   "desc": "rook from h7 to h8",
+   "prob": 0.466,
+   "legal": 28,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Nge5",
+     "desc": "knight from g4 to e5",
+     "prob": 0.269
+    },
+    {
+     "san": "Rh5",
+     "desc": "rook from h7 to h5",
+     "prob": 0.266
+    }
+   ],
+   "ply": 34,
+   "color": "black",
+   "player": "Laya (English)",
+   "uci": "h7h8",
+   "ms": 175,
+   "fen": "r1bqkb1r/ppppppp1/2n5/8/1PPP1PnP/7R/PQ2P3/RNB1KBN1 w Qq - 3 18",
+   "check": false,
+   "material": {
+    "white": 38,
+    "black": 38
+   }
+  },
+  {
+   "san": "Rh2",
+   "desc": "rook from h3 to h2",
+   "prob": 0.418,
+   "legal": 32,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Rc3",
+     "desc": "rook from h3 to c3",
+     "prob": 0.308
+    },
+    {
+     "san": "Qc3",
+     "desc": "queen from b2 to c3",
+     "prob": 0.274
+    }
+   ],
+   "ply": 35,
+   "color": "white",
+   "player": "Naluri (M6-pairs)",
+   "uci": "h3h2",
+   "ms": 49,
+   "fen": "r1bqkb1r/ppppppp1/2n5/8/1PPP1PnP/8/PQ2P2R/RNB1KBN1 b Qq - 4 18",
+   "check": false,
+   "material": {
+    "white": 38,
+    "black": 38
+   }
+  },
+  {
+   "san": "Rh7",
+   "desc": "rook from h8 to h7",
+   "prob": 0.516,
+   "legal": 29,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Rg8",
+     "desc": "rook from h8 to g8",
+     "prob": 0.247
+    },
+    {
+     "san": "Rh5",
+     "desc": "rook from h8 to h5",
+     "prob": 0.238
+    }
+   ],
+   "ply": 36,
+   "color": "black",
+   "player": "Laya (English)",
+   "uci": "h8h7",
+   "ms": 181,
+   "fen": "r1bqkb2/pppppppr/2n5/8/1PPP1PnP/8/PQ2P2R/RNB1KBN1 w Qq - 5 19",
+   "check": false,
+   "material": {
+    "white": 38,
+    "black": 38
+   }
+  },
+  {
+   "san": "b5",
+   "desc": "pawn from b4 to b5",
+   "prob": 0.368,
+   "legal": 29,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "f5",
+     "desc": "pawn from f4 to f5",
+     "prob": 0.368
+    },
+    {
+     "san": "Rf2",
+     "desc": "rook from h2 to f2",
+     "prob": 0.263
+    }
+   ],
+   "ply": 37,
+   "color": "white",
+   "player": "Naluri (M6-pairs)",
+   "uci": "b4b5",
+   "ms": 64,
+   "fen": "r1bqkb2/pppppppr/2n5/1P6/2PP1PnP/8/PQ2P2R/RNB1KBN1 b Qq - 0 19",
+   "check": false,
+   "material": {
+    "white": 38,
+    "black": 38
+   }
+  },
+  {
+   "san": "Rh8",
+   "desc": "rook from h7 to h8",
+   "prob": 0.6,
+   "legal": 27,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Rh5",
+     "desc": "rook from h7 to h5",
+     "prob": 0.225
+    },
+    {
+     "san": "Rh6",
+     "desc": "rook from h7 to h6",
+     "prob": 0.175
+    }
+   ],
+   "ply": 38,
+   "color": "black",
+   "player": "Laya (English)",
+   "uci": "h7h8",
+   "ms": 175,
+   "fen": "r1bqkb1r/ppppppp1/2n5/1P6/2PP1PnP/8/PQ2P2R/RNB1KBN1 w Qq - 1 20",
+   "check": false,
+   "material": {
+    "white": 38,
+    "black": 38
+   }
+  },
+  {
+   "san": "bxc6",
+   "desc": "pawn from b5 to c6, captures a knight",
+   "prob": 0.453,
+   "legal": 31,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "d5",
+     "desc": "pawn from d4 to d5",
+     "prob": 0.275
+    },
+    {
+     "san": "Rh1",
+     "desc": "rook from h2 to h1",
+     "prob": 0.272
+    }
+   ],
+   "ply": 39,
+   "color": "white",
+   "player": "Naluri (M6-pairs)",
+   "uci": "b5c6",
+   "ms": 58,
+   "fen": "r1bqkb1r/ppppppp1/2P5/8/2PP1PnP/8/PQ2P2R/RNB1KBN1 b Qq - 0 20",
+   "check": false,
+   "material": {
+    "white": 38,
+    "black": 35
+   }
+  },
+  {
+   "san": "Rh7",
+   "desc": "rook from h8 to h7",
+   "prob": 0.575,
+   "legal": 26,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Rh5",
+     "desc": "rook from h8 to h5",
+     "prob": 0.286
+    },
+    {
+     "san": "Rxh4",
+     "desc": "rook from h8 to h4, captures a pawn",
+     "prob": 0.139
+    }
+   ],
+   "ply": 40,
+   "color": "black",
+   "player": "Laya (English)",
+   "uci": "h8h7",
+   "ms": 166,
+   "fen": "r1bqkb2/pppppppr/2P5/8/2PP1PnP/8/PQ2P2R/RNB1KBN1 w Qq - 1 21",
+   "check": false,
+   "material": {
+    "white": 38,
+    "black": 35
+   }
+  },
+  {
+   "san": "cxd7+",
+   "desc": "pawn from c6 to d7, captures a pawn, gives check",
+   "prob": 0.376,
+   "legal": 34,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Qb4",
+     "desc": "queen from b2 to b4",
+     "prob": 0.368
+    },
+    {
+     "san": "Rh3",
+     "desc": "rook from h2 to h3",
+     "prob": 0.256
+    }
+   ],
+   "ply": 41,
+   "color": "white",
+   "player": "Naluri (M6-pairs)",
+   "uci": "c6d7",
+   "ms": 53,
+   "fen": "r1bqkb2/pppPpppr/8/8/2PP1PnP/8/PQ2P2R/RNB1KBN1 b Qq - 0 21",
+   "check": true,
+   "material": {
+    "white": 38,
+    "black": 34
+   }
+  },
+  {
+   "san": "Kxd7",
+   "desc": "king from e8 to d7, captures a pawn",
+   "prob": 0.397,
+   "legal": 3,
+   "rounds": 0,
+   "alternatives": [
+    {
+     "san": "Qxd7",
+     "desc": "queen from d8 to d7, captures a pawn",
+     "prob": 0.372
+    },
+    {
+     "san": "Bxd7",
+     "desc": "bishop from c8 to d7, captures a pawn",
+     "prob": 0.23
+    }
+   ],
+   "ply": 42,
+   "color": "black",
+   "player": "Laya (English)",
+   "uci": "e8d7",
+   "ms": 36,
+   "fen": "r1bq1b2/pppkpppr/8/8/2PP1PnP/8/PQ2P2R/RNB1KBN1 w Q - 0 22",
+   "check": false,
+   "material": {
+    "white": 37,
+    "black": 34
+   }
+  },
+  {
+   "san": "h5",
+   "desc": "pawn from h4 to h5",
+   "prob": 0.359,
+   "legal": 32,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "a3",
+     "desc": "pawn from a2 to a3",
+     "prob": 0.346
+    },
+    {
+     "san": "Qb5+",
+     "desc": "queen from b2 to b5, gives check",
+     "prob": 0.294
+    }
+   ],
+   "ply": 43,
+   "color": "white",
+   "player": "Naluri (M6-pairs)",
+   "uci": "h4h5",
+   "ms": 50,
+   "fen": "r1bq1b2/pppkpppr/8/7P/2PP1Pn1/8/PQ2P2R/RNB1KBN1 b Q - 0 22",
+   "check": false,
+   "material": {
+    "white": 37,
+    "black": 34
+   }
+  },
+  {
+   "san": "Rh8",
+   "desc": "rook from h7 to h8",
+   "prob": 0.671,
+   "legal": 27,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Ke8",
+     "desc": "king from d7 to e8",
+     "prob": 0.22
+    },
+    {
+     "san": "Qe8",
+     "desc": "queen from d8 to e8",
+     "prob": 0.109
+    }
+   ],
+   "ply": 44,
+   "color": "black",
+   "player": "Laya (English)",
+   "uci": "h7h8",
+   "ms": 172,
+   "fen": "r1bq1b1r/pppkppp1/8/7P/2PP1Pn1/8/PQ2P2R/RNB1KBN1 w Q - 1 23",
+   "check": false,
+   "material": {
+    "white": 37,
+    "black": 34
+   }
+  },
+  {
+   "san": "Qb4",
+   "desc": "queen from b2 to b4",
+   "prob": 0.374,
+   "legal": 33,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Qxb7",
+     "desc": "queen from b2 to b7, captures a pawn",
+     "prob": 0.335
+    },
+    {
+     "san": "Qb5+",
+     "desc": "queen from b2 to b5, gives check",
+     "prob": 0.292
+    }
+   ],
+   "ply": 45,
+   "color": "white",
+   "player": "Naluri (M6-pairs)",
+   "uci": "b2b4",
+   "ms": 52,
+   "fen": "r1bq1b1r/pppkppp1/8/7P/1QPP1Pn1/8/P3P2R/RNB1KBN1 b Q - 2 23",
+   "check": false,
+   "material": {
+    "white": 37,
+    "black": 34
+   }
+  },
+  {
+   "san": "Rh6",
+   "desc": "rook from h8 to h6",
+   "prob": 0.516,
+   "legal": 27,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Kc6",
+     "desc": "king from d7 to c6",
+     "prob": 0.282
+    },
+    {
+     "san": "Ne5",
+     "desc": "knight from g4 to e5",
+     "prob": 0.203
+    }
+   ],
+   "ply": 46,
+   "color": "black",
+   "player": "Laya (English)",
+   "uci": "h8h6",
+   "ms": 184,
+   "fen": "r1bq1b2/pppkppp1/7r/7P/1QPP1Pn1/8/P3P2R/RNB1KBN1 w Q - 3 24",
+   "check": false,
+   "material": {
+    "white": 37,
+    "black": 34
+   }
+  },
+  {
+   "san": "Qd6+",
+   "desc": "queen from b4 to d6, gives check",
+   "prob": 0.362,
+   "legal": 38,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Qc5",
+     "desc": "queen from b4 to c5",
+     "prob": 0.274
+    },
+    {
+     "san": "Rh3",
+     "desc": "rook from h2 to h3",
+     "prob": 0.203
+    },
+    {
+     "san": "f5",
+     "desc": "pawn from f4 to f5",
+     "prob": 0.162
+    }
+   ],
+   "ply": 47,
+   "color": "white",
+   "player": "Naluri (M6-pairs)",
+   "uci": "b4d6",
+   "ms": 65,
+   "fen": "r1bq1b2/pppkppp1/3Q3r/7P/2PP1Pn1/8/P3P2R/RNB1KBN1 b Q - 4 24",
+   "check": true,
+   "material": {
+    "white": 37,
+    "black": 34
+   }
+  },
+  {
+   "san": "Ke8",
+   "desc": "king from d7 to e8",
+   "prob": 0.264,
+   "legal": 5,
+   "rounds": 0,
+   "alternatives": [
+    {
+     "san": "Rxd6",
+     "desc": "rook from h6 to d6, captures a queen",
+     "prob": 0.254
+    },
+    {
+     "san": "Kxd6",
+     "desc": "king from d7 to d6, captures a queen",
+     "prob": 0.253
+    },
+    {
+     "san": "exd6",
+     "desc": "pawn from e7 to d6, captures a queen",
+     "prob": 0.132
+    }
+   ],
+   "ply": 48,
+   "color": "black",
+   "player": "Laya (English)",
+   "uci": "d7e8",
+   "ms": 42,
+   "fen": "r1bqkb2/ppp1ppp1/3Q3r/7P/2PP1Pn1/8/P3P2R/RNB1KBN1 w Q - 5 25",
+   "check": false,
+   "material": {
+    "white": 37,
+    "black": 34
+   }
+  },
+  {
+   "san": "Qc6+",
+   "desc": "queen from d6 to c6, gives check",
+   "prob": 0.268,
+   "legal": 41,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Qxh6",
+     "desc": "queen from d6 to h6, captures a rook",
+     "prob": 0.266
+    },
+    {
+     "san": "Qc5",
+     "desc": "queen from d6 to c5",
+     "prob": 0.261
+    },
+    {
+     "san": "Qxe7+",
+     "desc": "queen from d6 to e7, captures a pawn, gives check",
+     "prob": 0.206
+    }
+   ],
+   "ply": 49,
+   "color": "white",
+   "player": "Naluri (M6-pairs)",
+   "uci": "d6c6",
+   "ms": 80,
+   "fen": "r1bqkb2/ppp1ppp1/2Q4r/7P/2PP1Pn1/8/P3P2R/RNB1KBN1 b Q - 6 25",
+   "check": true,
+   "material": {
+    "white": 37,
+    "black": 34
+   }
+  },
+  {
+   "san": "Qd7",
+   "desc": "queen from d8 to d7",
+   "prob": 0.319,
+   "legal": 4,
+   "rounds": 0,
+   "alternatives": [
+    {
+     "san": "Rxc6",
+     "desc": "rook from h6 to c6, captures a queen",
+     "prob": 0.283
+    },
+    {
+     "san": "Bd7",
+     "desc": "bishop from c8 to d7",
+     "prob": 0.229
+    },
+    {
+     "san": "bxc6",
+     "desc": "pawn from b7 to c6, captures a queen",
+     "prob": 0.17
+    }
+   ],
+   "ply": 50,
+   "color": "black",
+   "player": "Laya (English)",
+   "uci": "d8d7",
+   "ms": 35,
+   "fen": "r1b1kb2/pppqppp1/2Q4r/7P/2PP1Pn1/8/P3P2R/RNB1KBN1 w Q - 7 26",
+   "check": false,
+   "material": {
+    "white": 37,
+    "black": 34
+   }
+  },
+  {
+   "san": "Qxh6",
+   "desc": "queen from c6 to h6, captures a rook",
+   "prob": 0.303,
+   "legal": 43,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Qxd7+",
+     "desc": "queen from c6 to d7, captures a queen, gives check",
+     "prob": 0.296
+    },
+    {
+     "san": "Qh1",
+     "desc": "queen from c6 to h1",
+     "prob": 0.224
+    },
+    {
+     "san": "Qf6",
+     "desc": "queen from c6 to f6",
+     "prob": 0.177
+    }
+   ],
+   "ply": 51,
+   "color": "white",
+   "player": "Naluri (M6-pairs)",
+   "uci": "c6h6",
+   "ms": 65,
+   "fen": "r1b1kb2/pppqppp1/7Q/7P/2PP1Pn1/8/P3P2R/RNB1KBN1 b Q - 0 26",
+   "check": false,
+   "material": {
+    "white": 37,
+    "black": 29
+   }
+  },
+  {
+   "san": "Kd8",
+   "desc": "king from e8 to d8",
+   "prob": 0.391,
+   "legal": 30,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Qd8",
+     "desc": "queen from d7 to d8",
+     "prob": 0.365
+    },
+    {
+     "san": "Nxh2",
+     "desc": "knight from g4 to h2, captures a rook",
+     "prob": 0.243
+    }
+   ],
+   "ply": 52,
+   "color": "black",
+   "player": "Laya (English)",
+   "uci": "e8d8",
+   "ms": 182,
+   "fen": "r1bk1b2/pppqppp1/7Q/7P/2PP1Pn1/8/P3P2R/RNB1KBN1 w Q - 1 27",
+   "check": false,
+   "material": {
+    "white": 37,
+    "black": 29
+   }
+  },
+  {
+   "san": "Qb6",
+   "desc": "queen from h6 to b6",
+   "prob": 0.421,
+   "legal": 36,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "a4",
+     "desc": "pawn from a2 to a4",
+     "prob": 0.314
+    },
+    {
+     "san": "Qxg7",
+     "desc": "queen from h6 to g7, captures a pawn",
+     "prob": 0.265
+    }
+   ],
+   "ply": 53,
+   "color": "white",
+   "player": "Naluri (M6-pairs)",
+   "uci": "h6b6",
+   "ms": 54,
+   "fen": "r1bk1b2/pppqppp1/1Q6/7P/2PP1Pn1/8/P3P2R/RNB1KBN1 b Q - 2 27",
+   "check": false,
+   "material": {
+    "white": 37,
+    "black": 29
+   }
+  },
+  {
+   "san": "Ke8",
+   "desc": "king from d8 to e8",
+   "prob": 0.503,
+   "legal": 27,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Qc6",
+     "desc": "queen from d7 to c6",
+     "prob": 0.273
+    },
+    {
+     "san": "Qe6",
+     "desc": "queen from d7 to e6",
+     "prob": 0.224
+    }
+   ],
+   "ply": 54,
+   "color": "black",
+   "player": "Laya (English)",
+   "uci": "d8e8",
+   "ms": 176,
+   "fen": "r1b1kb2/pppqppp1/1Q6/7P/2PP1Pn1/8/P3P2R/RNB1KBN1 w Q - 3 28",
+   "check": false,
+   "material": {
+    "white": 37,
+    "black": 29
+   }
+  },
+  {
+   "san": "Qxc7",
+   "desc": "queen from b6 to c7, captures a pawn",
+   "prob": 0.315,
+   "legal": 42,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Qh6",
+     "desc": "queen from b6 to h6",
+     "prob": 0.28
+    },
+    {
+     "san": "Qc5",
+     "desc": "queen from b6 to c5",
+     "prob": 0.268
+    },
+    {
+     "san": "Rh3",
+     "desc": "rook from h2 to h3",
+     "prob": 0.137
+    }
+   ],
+   "ply": 55,
+   "color": "white",
+   "player": "Naluri (M6-pairs)",
+   "uci": "b6c7",
+   "ms": 63,
+   "fen": "r1b1kb2/ppQqppp1/8/7P/2PP1Pn1/8/P3P2R/RNB1KBN1 b Q - 0 28",
+   "check": false,
+   "material": {
+    "white": 37,
+    "black": 28
+   }
+  },
+  {
+   "san": "Qxc7",
+   "desc": "queen from d7 to c7, captures a queen",
+   "prob": 0.464,
+   "legal": 27,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Qd8",
+     "desc": "queen from d7 to d8",
+     "prob": 0.336
+    },
+    {
+     "san": "Qe6",
+     "desc": "queen from d7 to e6",
+     "prob": 0.2
+    }
+   ],
+   "ply": 56,
+   "color": "black",
+   "player": "Laya (English)",
+   "uci": "d7c7",
+   "ms": 197,
+   "fen": "r1b1kb2/ppq1ppp1/8/7P/2PP1Pn1/8/P3P2R/RNB1KBN1 w Q - 0 29",
+   "check": false,
+   "material": {
+    "white": 28,
+    "black": 28
+   }
+  },
+  {
+   "san": "f5",
+   "desc": "pawn from f4 to f5",
+   "prob": 0.452,
+   "legal": 26,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "c5",
+     "desc": "pawn from c4 to c5",
+     "prob": 0.315
+    },
+    {
+     "san": "Rh1",
+     "desc": "rook from h2 to h1",
+     "prob": 0.232
+    }
+   ],
+   "ply": 57,
+   "color": "white",
+   "player": "Naluri (M6-pairs)",
+   "uci": "f4f5",
+   "ms": 51,
+   "fen": "r1b1kb2/ppq1ppp1/8/5P1P/2PP2n1/8/P3P2R/RNB1KBN1 b Q - 0 29",
+   "check": false,
+   "material": {
+    "white": 28,
+    "black": 28
+   }
+  },
+  {
+   "san": "Kd8",
+   "desc": "king from e8 to d8",
+   "prob": 0.581,
+   "legal": 34,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Kd7",
+     "desc": "king from e8 to d7",
+     "prob": 0.311
+    },
+    {
+     "san": "Qe5",
+     "desc": "queen from c7 to e5",
+     "prob": 0.108
+    }
+   ],
+   "ply": 58,
+   "color": "black",
+   "player": "Laya (English)",
+   "uci": "e8d8",
+   "ms": 188,
+   "fen": "r1bk1b2/ppq1ppp1/8/5P1P/2PP2n1/8/P3P2R/RNB1KBN1 w Q - 1 30",
+   "check": false,
+   "material": {
+    "white": 28,
+    "black": 28
+   }
+  },
+  {
+   "san": "a3",
+   "desc": "pawn from a2 to a3",
+   "prob": 0.373,
+   "legal": 29,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "h6",
+     "desc": "pawn from h5 to h6",
+     "prob": 0.321
+    },
+    {
+     "san": "c5",
+     "desc": "pawn from c4 to c5",
+     "prob": 0.307
+    }
+   ],
+   "ply": 59,
+   "color": "white",
+   "player": "Naluri (M6-pairs)",
+   "uci": "a2a3",
+   "ms": 48,
+   "fen": "r1bk1b2/ppq1ppp1/8/5P1P/2PP2n1/P7/4P2R/RNB1KBN1 b Q - 0 30",
+   "check": false,
+   "material": {
+    "white": 28,
+    "black": 28
+   }
+  },
+  {
+   "san": "Kd7",
+   "desc": "king from d8 to d7",
+   "prob": 0.792,
+   "legal": 33,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Ke8",
+     "desc": "king from d8 to e8",
+     "prob": 0.162
+    },
+    {
+     "san": "Be6",
+     "desc": "bishop from c8 to e6",
+     "prob": 0.046
+    }
+   ],
+   "ply": 60,
+   "color": "black",
+   "player": "Laya (English)",
+   "uci": "d8d7",
+   "ms": 201,
+   "fen": "r1b2b2/ppqkppp1/8/5P1P/2PP2n1/P7/4P2R/RNB1KBN1 w Q - 1 31",
+   "check": false,
+   "material": {
+    "white": 28,
+    "black": 28
+   }
+  },
+  {
+   "san": "Rg2",
+   "desc": "rook from h2 to g2",
+   "prob": 0.412,
+   "legal": 27,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Rf2",
+     "desc": "rook from h2 to f2",
+     "prob": 0.319
+    },
+    {
+     "san": "f6",
+     "desc": "pawn from f5 to f6",
+     "prob": 0.269
+    }
+   ],
+   "ply": 61,
+   "color": "white",
+   "player": "Naluri (M6-pairs)",
+   "uci": "h2g2",
+   "ms": 43,
+   "fen": "r1b2b2/ppqkppp1/8/5P1P/2PP2n1/P7/4P1R1/RNB1KBN1 b Q - 2 31",
+   "check": false,
+   "material": {
+    "white": 28,
+    "black": 28
+   }
+  },
+  {
+   "san": "Ke8",
+   "desc": "king from d7 to e8",
+   "prob": 0.676,
+   "legal": 32,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Kd6",
+     "desc": "king from d7 to d6",
+     "prob": 0.205
+    },
+    {
+     "san": "Qd8",
+     "desc": "queen from c7 to d8",
+     "prob": 0.118
+    }
+   ],
+   "ply": 62,
+   "color": "black",
+   "player": "Laya (English)",
+   "uci": "d7e8",
+   "ms": 211,
+   "fen": "r1b1kb2/ppq1ppp1/8/5P1P/2PP2n1/P7/4P1R1/RNB1KBN1 w Q - 3 32",
+   "check": false,
+   "material": {
+    "white": 28,
+    "black": 28
+   }
+  },
+  {
+   "san": "c5",
+   "desc": "pawn from c4 to c5",
+   "prob": 0.516,
+   "legal": 24,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "a4",
+     "desc": "pawn from a3 to a4",
+     "prob": 0.484
+    }
+   ],
+   "ply": 63,
+   "color": "white",
+   "player": "Naluri (M6-pairs)",
+   "uci": "c4c5",
+   "ms": 42,
+   "fen": "r1b1kb2/ppq1ppp1/8/2P2P1P/3P2n1/P7/4P1R1/RNB1KBN1 b Q - 0 32",
+   "check": false,
+   "material": {
+    "white": 28,
+    "black": 28
+   }
+  },
+  {
+   "san": "Kd7",
+   "desc": "king from e8 to d7",
+   "prob": 0.561,
+   "legal": 33,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Kd8",
+     "desc": "king from e8 to d8",
+     "prob": 0.307
+    },
+    {
+     "san": "Qc6",
+     "desc": "queen from c7 to c6",
+     "prob": 0.133
+    }
+   ],
+   "ply": 64,
+   "color": "black",
+   "player": "Laya (English)",
+   "uci": "e8d7",
+   "ms": 205,
+   "fen": "r1b2b2/ppqkppp1/8/2P2P1P/3P2n1/P7/4P1R1/RNB1KBN1 w Q - 1 33",
+   "check": false,
+   "material": {
+    "white": 28,
+    "black": 28
+   }
+  },
+  {
+   "san": "c6+",
+   "desc": "pawn from c5 to c6, gives check",
+   "prob": 0.62,
+   "legal": 24,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Rf2",
+     "desc": "rook from g2 to f2",
+     "prob": 0.38
+    }
+   ],
+   "ply": 65,
+   "color": "white",
+   "player": "Naluri (M6-pairs)",
+   "uci": "c5c6",
+   "ms": 41,
+   "fen": "r1b2b2/ppqkppp1/2P5/5P1P/3P2n1/P7/4P1R1/RNB1KBN1 b Q - 0 33",
+   "check": true,
+   "material": {
+    "white": 28,
+    "black": 28
+   }
+  },
+  {
+   "san": "Kd8",
+   "desc": "king from d7 to d8",
+   "prob": 0.468,
+   "legal": 6,
+   "rounds": 0,
+   "alternatives": [
+    {
+     "san": "Ke8",
+     "desc": "king from d7 to e8",
+     "prob": 0.364
+    },
+    {
+     "san": "Kd6",
+     "desc": "king from d7 to d6",
+     "prob": 0.069
+    },
+    {
+     "san": "Kxc6",
+     "desc": "king from d7 to c6, captures a pawn",
+     "prob": 0.057
+    }
+   ],
+   "ply": 66,
+   "color": "black",
+   "player": "Laya (English)",
+   "uci": "d7d8",
+   "ms": 58,
+   "fen": "r1bk1b2/ppq1ppp1/2P5/5P1P/3P2n1/P7/4P1R1/RNB1KBN1 w Q - 1 34",
+   "check": false,
+   "material": {
+    "white": 28,
+    "black": 28
+   }
+  },
+  {
+   "san": "a4",
+   "desc": "pawn from a3 to a4",
+   "prob": 0.534,
+   "legal": 24,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Rxg4",
+     "desc": "rook from g2 to g4, captures a knight",
+     "prob": 0.466
+    }
+   ],
+   "ply": 67,
+   "color": "white",
+   "player": "Naluri (M6-pairs)",
+   "uci": "a3a4",
+   "ms": 45,
+   "fen": "r1bk1b2/ppq1ppp1/2P5/5P1P/P2P2n1/8/4P1R1/RNB1KBN1 b Q - 0 34",
+   "check": false,
+   "material": {
+    "white": 28,
+    "black": 28
+   }
+  },
+  {
+   "san": "Bd7",
+   "desc": "bishop from c8 to d7",
+   "prob": 0.482,
+   "legal": 31,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Qb8",
+     "desc": "queen from c7 to b8",
+     "prob": 0.298
+    },
+    {
+     "san": "Qd7",
+     "desc": "queen from c7 to d7",
+     "prob": 0.22
+    }
+   ],
+   "ply": 68,
+   "color": "black",
+   "player": "Laya (English)",
+   "uci": "c8d7",
+   "ms": 173,
+   "fen": "r2k1b2/ppqbppp1/2P5/5P1P/P2P2n1/8/4P1R1/RNB1KBN1 w Q - 1 35",
+   "check": false,
+   "material": {
+    "white": 28,
+    "black": 28
+   }
+  },
+  {
+   "san": "Rg3",
+   "desc": "rook from g2 to g3",
+   "prob": 0.408,
+   "legal": 28,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "cxb7",
+     "desc": "pawn from c6 to b7, captures a pawn",
+     "prob": 0.387
+    },
+    {
+     "san": "Bb2",
+     "desc": "bishop from c1 to b2",
+     "prob": 0.205
+    }
+   ],
+   "ply": 69,
+   "color": "white",
+   "player": "Naluri (M6-pairs)",
+   "uci": "g2g3",
+   "ms": 54,
+   "fen": "r2k1b2/ppqbppp1/2P5/5P1P/P2P2n1/6R1/4P3/RNB1KBN1 b Q - 2 35",
+   "check": false,
+   "material": {
+    "white": 28,
+    "black": 28
+   }
+  },
+  {
+   "san": "Ke8",
+   "desc": "king from d8 to e8",
+   "prob": 0.502,
+   "legal": 34,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Kc8",
+     "desc": "king from d8 to c8",
+     "prob": 0.341
+    },
+    {
+     "san": "Qd6",
+     "desc": "queen from c7 to d6",
+     "prob": 0.156
+    }
+   ],
+   "ply": 70,
+   "color": "black",
+   "player": "Laya (English)",
+   "uci": "d8e8",
+   "ms": 213,
+   "fen": "r3kb2/ppqbppp1/2P5/5P1P/P2P2n1/6R1/4P3/RNB1KBN1 w Q - 3 36",
+   "check": false,
+   "material": {
+    "white": 28,
+    "black": 28
+   }
+  },
+  {
+   "san": "cxb7",
+   "desc": "pawn from c6 to b7, captures a pawn",
+   "prob": 0.551,
+   "legal": 35,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "cxd7+",
+     "desc": "pawn from c6 to d7, captures a bishop, gives check",
+     "prob": 0.294
+    },
+    {
+     "san": "Rb3",
+     "desc": "rook from g3 to b3",
+     "prob": 0.155
+    }
+   ],
+   "ply": 71,
+   "color": "white",
+   "player": "Naluri (M6-pairs)",
+   "uci": "c6b7",
+   "ms": 47,
+   "fen": "r3kb2/pPqbppp1/8/5P1P/P2P2n1/6R1/4P3/RNB1KBN1 b Q - 0 36",
+   "check": false,
+   "material": {
+    "white": 28,
+    "black": 27
+   }
+  },
+  {
+   "san": "Kd8",
+   "desc": "king from e8 to d8",
+   "prob": 0.387,
+   "legal": 39,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Qxb7",
+     "desc": "queen from c7 to b7, captures a pawn",
+     "prob": 0.258
+    },
+    {
+     "san": "Qc6",
+     "desc": "queen from c7 to c6",
+     "prob": 0.204
+    },
+    {
+     "san": "Rd8",
+     "desc": "rook from a8 to d8",
+     "prob": 0.151
+    }
+   ],
+   "ply": 72,
+   "color": "black",
+   "player": "Laya (English)",
+   "uci": "e8d8",
+   "ms": 253,
+   "fen": "r2k1b2/pPqbppp1/8/5P1P/P2P2n1/6R1/4P3/RNB1KBN1 w Q - 1 37",
+   "check": false,
+   "material": {
+    "white": 28,
+    "black": 27
+   }
+  },
+  {
+   "san": "bxa8=B",
+   "desc": "pawn from b7 to a8, captures a rook, promotes to a bishop",
+   "prob": 0.327,
+   "legal": 41,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "b8=R+",
+     "desc": "pawn from b7 to b8, promotes to a rook, gives check",
+     "prob": 0.248
+    },
+    {
+     "san": "bxa8=Q+",
+     "desc": "pawn from b7 to a8, captures a rook, promotes to a queen, gives check",
+     "prob": 0.238
+    },
+    {
+     "san": "b8=B",
+     "desc": "pawn from b7 to b8, promotes to a bishop",
+     "prob": 0.187
+    }
+   ],
+   "ply": 73,
+   "color": "white",
+   "player": "Naluri (M6-pairs)",
+   "uci": "b7a8b",
+   "ms": 65,
+   "fen": "B2k1b2/p1qbppp1/8/5P1P/P2P2n1/6R1/4P3/RNB1KBN1 b Q - 0 37",
+   "check": false,
+   "material": {
+    "white": 30,
+    "black": 22
+   }
+  },
+  {
+   "san": "Kc8",
+   "desc": "king from d8 to c8",
+   "prob": 0.44,
+   "legal": 37,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Ke8",
+     "desc": "king from d8 to e8",
+     "prob": 0.319
+    },
+    {
+     "san": "Qc6",
+     "desc": "queen from c7 to c6",
+     "prob": 0.126
+    },
+    {
+     "san": "Qb8",
+     "desc": "queen from c7 to b8",
+     "prob": 0.116
+    }
+   ],
+   "ply": 74,
+   "color": "black",
+   "player": "Laya (English)",
+   "uci": "d8c8",
+   "ms": 186,
+   "fen": "B1k2b2/p1qbppp1/8/5P1P/P2P2n1/6R1/4P3/RNB1KBN1 w Q - 1 38",
+   "check": false,
+   "material": {
+    "white": 30,
+    "black": 22
+   }
+  },
+  {
+   "san": "Rxg4",
+   "desc": "rook from g3 to g4, captures a knight",
+   "prob": 0.329,
+   "legal": 40,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Bb7+",
+     "desc": "bishop from a8 to b7, gives check",
+     "prob": 0.237
+    },
+    {
+     "san": "Ra2",
+     "desc": "rook from a1 to a2",
+     "prob": 0.22
+    },
+    {
+     "san": "Rg2",
+     "desc": "rook from g3 to g2",
+     "prob": 0.214
+    }
+   ],
+   "ply": 75,
+   "color": "white",
+   "player": "Naluri (M6-pairs)",
+   "uci": "g3g4",
+   "ms": 61,
+   "fen": "B1k2b2/p1qbppp1/8/5P1P/P2P2R1/8/4P3/RNB1KBN1 b Q - 0 38",
+   "check": false,
+   "material": {
+    "white": 30,
+    "black": 19
+   }
+  },
+  {
+   "san": "Kd8",
+   "desc": "king from c8 to d8",
+   "prob": 0.754,
+   "legal": 31,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Qa5+",
+     "desc": "queen from c7 to a5, gives check",
+     "prob": 0.128
+    },
+    {
+     "san": "Qd8",
+     "desc": "queen from c7 to d8",
+     "prob": 0.118
+    }
+   ],
+   "ply": 76,
+   "color": "black",
+   "player": "Laya (English)",
+   "uci": "c8d8",
+   "ms": 187,
+   "fen": "B2k1b2/p1qbppp1/8/5P1P/P2P2R1/8/4P3/RNB1KBN1 w Q - 1 39",
+   "check": false,
+   "material": {
+    "white": 30,
+    "black": 19
+   }
+  },
+  {
+   "san": "Rxg7",
+   "desc": "rook from g4 to g7, captures a pawn",
+   "prob": 0.302,
+   "legal": 40,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Bd2",
+     "desc": "bishop from c1 to d2",
+     "prob": 0.263
+    },
+    {
+     "san": "Rg2",
+     "desc": "rook from g4 to g2",
+     "prob": 0.228
+    },
+    {
+     "san": "Rg6",
+     "desc": "rook from g4 to g6",
+     "prob": 0.207
+    }
+   ],
+   "ply": 77,
+   "color": "white",
+   "player": "Naluri (M6-pairs)",
+   "uci": "g4g7",
+   "ms": 64,
+   "fen": "B2k1b2/p1qbppR1/8/5P1P/P2P4/8/4P3/RNB1KBN1 b Q - 0 39",
+   "check": false,
+   "material": {
+    "white": 30,
+    "black": 18
+   }
+  },
+  {
+   "san": "Kc8",
+   "desc": "king from d8 to c8",
+   "prob": 0.766,
+   "legal": 31,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Qb7",
+     "desc": "queen from c7 to b7",
+     "prob": 0.118
+    },
+    {
+     "san": "Qc6",
+     "desc": "queen from c7 to c6",
+     "prob": 0.116
+    }
+   ],
+   "ply": 78,
+   "color": "black",
+   "player": "Laya (English)",
+   "uci": "d8c8",
+   "ms": 187,
+   "fen": "B1k2b2/p1qbppR1/8/5P1P/P2P4/8/4P3/RNB1KBN1 w Q - 1 40",
+   "check": false,
+   "material": {
+    "white": 30,
+    "black": 18
+   }
+  },
+  {
+   "san": "Rxf7",
+   "desc": "rook from g7 to f7, captures a pawn",
+   "prob": 0.32,
+   "legal": 40,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "e4",
+     "desc": "pawn from e2 to e4",
+     "prob": 0.247
+    },
+    {
+     "san": "Ra3",
+     "desc": "rook from a1 to a3",
+     "prob": 0.222
+    },
+    {
+     "san": "Rg8",
+     "desc": "rook from g7 to g8",
+     "prob": 0.211
+    }
+   ],
+   "ply": 79,
+   "color": "white",
+   "player": "Naluri (M6-pairs)",
+   "uci": "g7f7",
+   "ms": 65,
+   "fen": "B1k2b2/p1qbpR2/8/5P1P/P2P4/8/4P3/RNB1KBN1 b Q - 0 40",
+   "check": false,
+   "material": {
+    "white": 30,
+    "black": 17
+   }
+  },
+  {
+   "san": "Kd8",
+   "desc": "king from c8 to d8",
+   "prob": 0.524,
+   "legal": 30,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Kb8",
+     "desc": "king from c8 to b8",
+     "prob": 0.294
+    },
+    {
+     "san": "Qg3+",
+     "desc": "queen from c7 to g3, gives check",
+     "prob": 0.182
+    }
+   ],
+   "ply": 80,
+   "color": "black",
+   "player": "Laya (English)",
+   "uci": "c8d8",
+   "ms": 197,
+   "fen": "B2k1b2/p1qbpR2/8/5P1P/P2P4/8/4P3/RNB1KBN1 w Q - 1 41",
+   "check": false,
+   "material": {
+    "white": 30,
+    "black": 17
+   }
+  },
+  {
+   "san": "Rxf8+",
+   "desc": "rook from f7 to f8, captures a bishop, gives check",
+   "prob": 0.331,
+   "legal": 37,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Rf6",
+     "desc": "rook from f7 to f6",
+     "prob": 0.296
+    },
+    {
+     "san": "Rxe7",
+     "desc": "rook from f7 to e7, captures a pawn",
+     "prob": 0.268
+    },
+    {
+     "san": "Ba3",
+     "desc": "bishop from c1 to a3",
+     "prob": 0.105
+    }
+   ],
+   "ply": 81,
+   "color": "white",
+   "player": "Naluri (M6-pairs)",
+   "uci": "f7f8",
+   "ms": 53,
+   "fen": "B2k1R2/p1qbp3/8/5P1P/P2P4/8/4P3/RNB1KBN1 b Q - 0 41",
+   "check": true,
+   "material": {
+    "white": 30,
+    "black": 14
+   }
+  },
+  {
+   "san": "Be8",
+   "desc": "bishop from d7 to e8",
+   "prob": 1.0,
+   "legal": 1,
+   "rounds": 0,
+   "alternatives": [],
+   "ply": 82,
+   "color": "black",
+   "player": "Laya (English)",
+   "uci": "d7e8",
+   "ms": 2,
+   "fen": "B2kbR2/p1q1p3/8/5P1P/P2P4/8/4P3/RNB1KBN1 w Q - 1 42",
+   "check": false,
+   "material": {
+    "white": 30,
+    "black": 14
+   }
+  },
+  {
+   "san": "Rxe8+",
+   "desc": "rook from f8 to e8, captures a bishop, gives check",
+   "prob": 0.399,
+   "legal": 37,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "a5",
+     "desc": "pawn from a4 to a5",
+     "prob": 0.245
+    },
+    {
+     "san": "Ra3",
+     "desc": "rook from a1 to a3",
+     "prob": 0.188
+    },
+    {
+     "san": "Kd1",
+     "desc": "king from e1 to d1",
+     "prob": 0.168
+    }
+   ],
+   "ply": 83,
+   "color": "white",
+   "player": "Naluri (M6-pairs)",
+   "uci": "f8e8",
+   "ms": 47,
+   "fen": "B2kR3/p1q1p3/8/5P1P/P2P4/8/4P3/RNB1KBN1 b Q - 0 42",
+   "check": true,
+   "material": {
+    "white": 30,
+    "black": 11
+   }
+  },
+  {
+   "san": "Kxe8",
+   "desc": "king from d8 to e8, captures a rook",
+   "prob": 0.565,
+   "legal": 2,
+   "rounds": 0,
+   "alternatives": [
+    {
+     "san": "Kd7",
+     "desc": "king from d8 to d7",
+     "prob": 0.435
+    }
+   ],
+   "ply": 84,
+   "color": "black",
+   "player": "Laya (English)",
+   "uci": "d8e8",
+   "ms": 38,
+   "fen": "B3k3/p1q1p3/8/5P1P/P2P4/8/4P3/RNB1KBN1 w Q - 0 43",
+   "check": false,
+   "material": {
+    "white": 25,
+    "black": 11
+   }
+  },
+  {
+   "san": "e4",
+   "desc": "pawn from e2 to e4",
+   "prob": 0.376,
+   "legal": 32,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "h6",
+     "desc": "pawn from h5 to h6",
+     "prob": 0.318
+    },
+    {
+     "san": "f6",
+     "desc": "pawn from f5 to f6",
+     "prob": 0.306
+    }
+   ],
+   "ply": 85,
+   "color": "white",
+   "player": "Naluri (M6-pairs)",
+   "uci": "e2e4",
+   "ms": 57,
+   "fen": "B3k3/p1q1p3/8/5P1P/P2PP3/8/8/RNB1KBN1 b Q - 0 43",
+   "check": false,
+   "material": {
+    "white": 25,
+    "black": 11
+   }
+  },
+  {
+   "san": "Kf8",
+   "desc": "king from e8 to f8",
+   "prob": 0.445,
+   "legal": 26,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Kf7",
+     "desc": "king from e8 to f7",
+     "prob": 0.417
+    },
+    {
+     "san": "Qb8",
+     "desc": "queen from c7 to b8",
+     "prob": 0.138
+    }
+   ],
+   "ply": 86,
+   "color": "black",
+   "player": "Laya (English)",
+   "uci": "e8f8",
+   "ms": 175,
+   "fen": "B4k2/p1q1p3/8/5P1P/P2PP3/8/8/RNB1KBN1 w Q - 1 44",
+   "check": false,
+   "material": {
+    "white": 25,
+    "black": 11
+   }
+  },
+  {
+   "san": "Kf2",
+   "desc": "king from e1 to f2",
+   "prob": 0.402,
+   "legal": 34,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Bh6+",
+     "desc": "bishop from c1 to h6, gives check",
+     "prob": 0.377
+    },
+    {
+     "san": "d5",
+     "desc": "pawn from d4 to d5",
+     "prob": 0.221
+    }
+   ],
+   "ply": 87,
+   "color": "white",
+   "player": "Naluri (M6-pairs)",
+   "uci": "e1f2",
+   "ms": 57,
+   "fen": "B4k2/p1q1p3/8/5P1P/P2PP3/8/5K2/RNB2BN1 b - - 2 44",
+   "check": false,
+   "material": {
+    "white": 25,
+    "black": 11
+   }
+  },
+  {
+   "san": "Kg8",
+   "desc": "king from f8 to g8",
+   "prob": 0.481,
+   "legal": 26,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Kg7",
+     "desc": "king from f8 to g7",
+     "prob": 0.377
+    },
+    {
+     "san": "Qh2+",
+     "desc": "queen from c7 to h2, gives check",
+     "prob": 0.142
+    }
+   ],
+   "ply": 88,
+   "color": "black",
+   "player": "Laya (English)",
+   "uci": "f8g8",
+   "ms": 183,
+   "fen": "B5k1/p1q1p3/8/5P1P/P2PP3/8/5K2/RNB2BN1 w - - 3 45",
+   "check": false,
+   "material": {
+    "white": 25,
+    "black": 11
+   }
+  },
+  {
+   "san": "e5",
+   "desc": "pawn from e4 to e5",
+   "prob": 0.351,
+   "legal": 35,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "a5",
+     "desc": "pawn from a4 to a5",
+     "prob": 0.333
+    },
+    {
+     "san": "Nf3",
+     "desc": "knight from g1 to f3",
+     "prob": 0.315
+    }
+   ],
+   "ply": 89,
+   "color": "white",
+   "player": "Naluri (M6-pairs)",
+   "uci": "e4e5",
+   "ms": 54,
+   "fen": "B5k1/p1q1p3/8/4PP1P/P2P4/8/5K2/RNB2BN1 b - - 0 45",
+   "check": false,
+   "material": {
+    "white": 25,
+    "black": 11
+   }
+  },
+  {
+   "san": "Kg7",
+   "desc": "king from g8 to g7",
+   "prob": 0.551,
+   "legal": 23,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Qd7",
+     "desc": "queen from c7 to d7",
+     "prob": 0.449
+    }
+   ],
+   "ply": 90,
+   "color": "black",
+   "player": "Laya (English)",
+   "uci": "g8g7",
+   "ms": 144,
+   "fen": "B7/p1q1p1k1/8/4PP1P/P2P4/8/5K2/RNB2BN1 w - - 1 46",
+   "check": false,
+   "material": {
+    "white": 25,
+    "black": 11
+   }
+  },
+  {
+   "san": "h6+",
+   "desc": "pawn from h5 to h6, gives check",
+   "prob": 0.337,
+   "legal": 40,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "a5",
+     "desc": "pawn from a4 to a5",
+     "prob": 0.287
+    },
+    {
+     "san": "Bh6+",
+     "desc": "bishop from c1 to h6, gives check",
+     "prob": 0.192
+    },
+    {
+     "san": "d5",
+     "desc": "pawn from d4 to d5",
+     "prob": 0.184
+    }
+   ],
+   "ply": 91,
+   "color": "white",
+   "player": "Naluri (M6-pairs)",
+   "uci": "h5h6",
+   "ms": 60,
+   "fen": "B7/p1q1p1k1/7P/4PP2/P2P4/8/5K2/RNB2BN1 b - - 0 46",
+   "check": true,
+   "material": {
+    "white": 25,
+    "black": 11
+   }
+  },
+  {
+   "san": "Kg8",
+   "desc": "king from g7 to g8",
+   "prob": 0.401,
+   "legal": 5,
+   "rounds": 0,
+   "alternatives": [
+    {
+     "san": "Kf7",
+     "desc": "king from g7 to f7",
+     "prob": 0.194
+    },
+    {
+     "san": "Kh7",
+     "desc": "king from g7 to h7",
+     "prob": 0.153
+    },
+    {
+     "san": "Kf8",
+     "desc": "king from g7 to f8",
+     "prob": 0.127
+    }
+   ],
+   "ply": 92,
+   "color": "black",
+   "player": "Laya (English)",
+   "uci": "g7g8",
+   "ms": 56,
+   "fen": "B5k1/p1q1p3/7P/4PP2/P2P4/8/5K2/RNB2BN1 w - - 1 47",
+   "check": false,
+   "material": {
+    "white": 25,
+    "black": 11
+   }
+  },
+  {
+   "san": "e6",
+   "desc": "pawn from e5 to e6",
+   "prob": 0.343,
+   "legal": 39,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Bc4+",
+     "desc": "bishop from f1 to c4, gives check",
+     "prob": 0.333
+    },
+    {
+     "san": "Ke3",
+     "desc": "king from f2 to e3",
+     "prob": 0.189
+    },
+    {
+     "san": "Bf4",
+     "desc": "bishop from c1 to f4",
+     "prob": 0.135
+    }
+   ],
+   "ply": 93,
+   "color": "white",
+   "player": "Naluri (M6-pairs)",
+   "uci": "e5e6",
+   "ms": 61,
+   "fen": "B5k1/p1q1p3/4P2P/5P2/P2P4/8/5K2/RNB2BN1 b - - 0 47",
+   "check": false,
+   "material": {
+    "white": 25,
+    "black": 11
+   }
+  },
+  {
+   "san": "Kf8",
+   "desc": "king from g8 to f8",
+   "prob": 0.547,
+   "legal": 23,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Kh7",
+     "desc": "king from g8 to h7",
+     "prob": 0.453
+    }
+   ],
+   "ply": 94,
+   "color": "black",
+   "player": "Laya (English)",
+   "uci": "g8f8",
+   "ms": 137,
+   "fen": "B4k2/p1q1p3/4P2P/5P2/P2P4/8/5K2/RNB2BN1 w - - 1 48",
+   "check": false,
+   "material": {
+    "white": 25,
+    "black": 11
+   }
+  },
+  {
+   "san": "h7",
+   "desc": "pawn from h6 to h7",
+   "prob": 0.647,
+   "legal": 37,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Ke2",
+     "desc": "king from f2 to e2",
+     "prob": 0.223
+    },
+    {
+     "san": "Ba6",
+     "desc": "bishop from f1 to a6",
+     "prob": 0.077
+    },
+    {
+     "san": "Ba3",
+     "desc": "bishop from c1 to a3",
+     "prob": 0.053
+    }
+   ],
+   "ply": 95,
+   "color": "white",
+   "player": "Naluri (M6-pairs)",
+   "uci": "h6h7",
+   "ms": 54,
+   "fen": "B4k2/p1q1p2P/4P3/5P2/P2P4/8/5K2/RNB2BN1 b - - 0 48",
+   "check": false,
+   "material": {
+    "white": 25,
+    "black": 11
+   }
+  },
+  {
+   "san": "Ke8",
+   "desc": "king from f8 to e8",
+   "prob": 0.9,
+   "legal": 22,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Qe5",
+     "desc": "queen from c7 to e5",
+     "prob": 0.1
+    }
+   ],
+   "ply": 96,
+   "color": "black",
+   "player": "Laya (English)",
+   "uci": "f8e8",
+   "ms": 128,
+   "fen": "B3k3/p1q1p2P/4P3/5P2/P2P4/8/5K2/RNB2BN1 w - - 1 49",
+   "check": false,
+   "material": {
+    "white": 25,
+    "black": 11
+   }
+  },
+  {
+   "san": "h8=R#",
+   "desc": "pawn from h7 to h8, promotes to a rook, checkmate",
+   "prob": 0.347,
+   "legal": 41,
+   "rounds": 1,
+   "alternatives": [
+    {
+     "san": "Bc6+",
+     "desc": "bishop from a8 to c6, gives check",
+     "prob": 0.27
+    },
+    {
+     "san": "h8=Q#",
+     "desc": "pawn from h7 to h8, promotes to a queen, checkmate",
+     "prob": 0.264
+    },
+    {
+     "san": "Nc3",
+     "desc": "knight from b1 to c3",
+     "prob": 0.119
+    }
+   ],
+   "ply": 97,
+   "color": "white",
+   "player": "Naluri (M6-pairs)",
+   "uci": "h7h8r",
+   "ms": 70,
+   "fen": "B3k2R/p1q1p3/4P3/5P2/P2P4/8/5K2/RNB2BN1 b - - 0 49",
+   "check": true,
+   "material": {
+    "white": 29,
+    "black": 11
+   }
+  }
+ ]
+};
+const P = { K:"♚", Q:"♛", R:"♜", B:"♝", N:"♞", P:"♟" };
+const params = new URLSearchParams(location.search);
+const $ = (id) => document.getElementById(id);
+let i = 0, timer = null;
+
+function fenBoard(fen) {
+  return fen.split(" ")[0].split("/").map((row) => {
+    const out = [];
+    for (const ch of row) { if (/\d/.test(ch)) for (let k = 0; k < +ch; k++) out.push(null); else out.push(ch); }
+    return out;
+  });
+}
+function sqName(r, c) { return "abcdefgh"[c] + (8 - r); }
+
+function drawBoard(fen, uci, check, color) {
+  const rows = fenBoard(fen), hl = uci ? [uci.slice(0, 2), uci.slice(2, 4)] : [];
+  const kingToMove = check ? (color === "white" ? "K" : "k") : null;  // the side to move is the one in check
+  const b = $("board"); b.replaceChildren();
+  rows.forEach((row, r) => row.forEach((p, c) => {
+    const d = document.createElement("div");
+    d.className = "sq " + ((r + c) % 2 ? "d" : "l") + (hl.includes(sqName(r, c)) ? " hl" : "") + (p && p === kingToMove ? " chk" : "");
+    if (p) { const s = document.createElement("span"); s.className = "pc " + (p === p.toUpperCase() ? "w" : "b"); s.textContent = P[p.toUpperCase()]; d.append(s); }
+    if (c === 7) { const s = document.createElement("span"); s.className = "coord r"; s.style.left = "auto"; s.style.right = "4px"; s.textContent = 8 - r; d.append(s); }
+    if (r === 7) { const s = document.createElement("span"); s.className = "coord f"; s.style.right = "auto"; s.style.left = "4px"; s.textContent = "abcdefgh"[c]; d.append(s); }
+    b.append(d);
+  }));
+}
+
+function show(k) {
+  i = Math.max(0, Math.min(k, DATA.moves.length));
+  $("slider").value = i;
+  if (i === 0) {
+    drawBoard(DATA.start_fen, null, false, null);
+    $("moveNo").textContent = "Start"; $("who").textContent = "Naluri plays White"; $("san").innerHTML = "&nbsp;";
+    $("desc").textContent = ""; $("conf").style.width = "0"; $("confText").textContent = "";
+    $("alts").innerHTML = '<div class="foot">–</div>'; setMat({ white: 39, black: 39 }); renderMoves(); return;
+  }
+  const m = DATA.moves[i - 1];
+  drawBoard(m.fen, m.uci, m.check, m.color === "white" ? "black" : "white");
+  $("moveNo").textContent = `Move ${Math.ceil(m.ply / 2)} · ${m.color}`;
+  $("who").innerHTML = `<span style="color:${m.player.startsWith("Naluri") ? "var(--naluri)" : "var(--laya)"}">${m.player.split(" (")[0]}</span> plays`;
+  $("san").textContent = m.san;
+  $("desc").textContent = m.desc;
+  $("conf").style.width = `${(m.prob * 100).toFixed(0)}%`;
+  $("conf").style.background = m.player.startsWith("Naluri") ? "var(--naluri)" : "var(--laya)";
+  $("confText").textContent = `confidence ${m.prob.toFixed(2)} · ${m.legal} legal moves · ${m.ms} ms`;
+  $("alts").replaceChildren(...(m.alternatives.length ? m.alternatives : [{ san: "–", desc: "only move", prob: 0 }]).map((a) => {
+    const row = document.createElement("div"); row.className = "alt";
+    row.innerHTML = `<span><b>${a.san}</b></span><div class="t"><div style="width:${(a.prob * 100).toFixed(0)}%"></div></div><span class="v">${a.prob.toFixed(2)}</span>`;
+    row.title = a.desc; return row;
+  }));
+  setMat(m.material); renderMoves();
+  if (i === DATA.moves.length && params.has("record")) setTimeout(showEnd, 900);
+}
+
+function setMat(mt) {
+  const t = mt.white + mt.black || 1;
+  $("matW").style.width = `${(mt.white / t) * 100}%`; $("matB").style.width = `${(mt.black / t) * 100}%`;
+  $("matText").textContent = `white ${mt.white} · black ${mt.black}`;
+}
+
+function renderMoves() {
+  const box = $("moves"); box.replaceChildren();
+  DATA.moves.forEach((m, k) => {
+    if (m.color === "white") box.append(document.createTextNode(`${Math.ceil(m.ply / 2)}. `));
+    const s = document.createElement("span"); s.textContent = m.san; if (k === i - 1) s.className = "cur";
+    s.onclick = () => { stop(); show(k + 1); }; box.append(s, document.createTextNode(" "));
+  });
+  const cur = box.querySelector(".cur"); if (cur) cur.scrollIntoView({ block: "nearest" });
+}
+
+function showEnd() {
+  const winner = DATA.result === "1-0" ? DATA.white.split(" (")[0] : DATA.result === "0-1" ? DATA.black.split(" (")[0] : null;
+  $("endBig").textContent = winner ? `${winner} wins` : "Draw";
+  $("endSmall").textContent = `${DATA.result} · ${DATA.termination.replace("_", " ")} · ${Math.ceil(DATA.moves.length / 2)} moves`;
+  $("end").style.display = "flex";
+}
+
+function play() {
+  if (timer) return stop();
+  if (i >= DATA.moves.length) show(0);
+  $("play").textContent = "⏸ Pause";
+  const step = () => { if (i >= DATA.moves.length) return stop(); show(i + 1); timer = setTimeout(step, +$("speed").value); };
+  timer = setTimeout(step, +$("speed").value);
+}
+function stop() { clearTimeout(timer); timer = null; $("play").textContent = "▶ Play"; }
+
+$("wName").textContent = DATA.white + " · White"; $("bName").textContent = "Black · " + DATA.black;
+$("slider").max = DATA.moves.length;
+$("slider").oninput = (e) => { stop(); show(+e.target.value); };
+$("first").onclick = () => { stop(); show(0); }; $("last").onclick = () => { stop(); show(DATA.moves.length); };
+$("prev").onclick = () => { stop(); show(i - 1); }; $("next").onclick = () => { stop(); show(i + 1); };
+$("play").onclick = play;
+$("end").onclick = () => { $("end").style.display = "none"; };
+show(0);
+if (params.has("record")) {
+  document.body.classList.add("rec");
+  if (params.get("speed")) $("speed").innerHTML = `<option value="${params.get("speed")}">rec</option>`;
+  setTimeout(play, 1200);
+}
+</script>
+</body>
+</html>

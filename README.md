@@ -162,6 +162,27 @@ flowchart LR
 
 The API clients read keys from a local `.env` file, which is not committed: `JEV_API_KEY`, `LITELLM_API_URL` and `LITELLM_API_KEY`.
 
+## Chess, for fun
+
+Naluri vs Laya (English checkpoint) at chess, with no chess training at all: every move is a `choice` question over the
+legal moves, each described in plain English ("knight from g1 to f3, captures a pawn, gives check"). Positions with many
+legal moves use a knockout of 12-move groups. Games are capped at 120 half-moves and then decided on material.
+
+| Match (`chess_battle.py`) | Score |
+|---|---|
+| Naluri vs Laya, 4 games, colors alternated | **Naluri 3.5 – 0.5 Laya** (2 checkmates, 1 draw, 1 win on material) |
+| Naluri vs a random mover, 6 games | Naluri 6 / 6 |
+| Laya vs a random mover, 6 games | Laya 2 / 6 |
+
+It isn't real chess. When a capture or check was available, Naluri played one 57% of the time vs Laya's 29%: it reads
+"captures a queen" in the option text and goes for it, which is enough to beat a near-random opponent.
+
+- `results/chess/game1-4.pgn`: the match games (paste into lichess.org → Tools → Import game)
+- `results/chess/naluri_vs_laya_replay.html`: an interactive replay of a logged showcase game (`chess_showcase.py`, the
+  best of 8 played: Naluri mates with h8=R#), showing each move's confidence and the alternatives considered. Download
+  it and open it in a browser.
+- `results/chess/naluri_vs_laya.mp4`: a 70-second video of that replay
+
 ## Roadmap
 
 - Synthetic data with more agent-trace, workflow and policy decisions over structured states, scaled to 20–50k decisions (M4 showed that better use of the current 4.7k isn't enough for typed-decisions)

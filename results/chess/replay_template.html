@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Naluri vs Laya Chess</title>
+<style>
+  :root { --bg:#0f1115; --panel:#181b22; --line:#2a2f3a; --ink:#f2f3f7; --ink2:#a7adbd; --muted:#6f7687;
+    --light:#e9dcc3; --dark:#a97e5a; --hl:#f4d35e; --chk:#e5484d; --naluri:#7c9cff; --laya:#ffb35c; --bar:#7c9cff; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif; }
+  .wrap { max-width:1080px; margin:0 auto; padding:28px 28px 20px; }
+  h1 { margin:0; font-size:28px; letter-spacing:-.2px; }
+  .sub { color:var(--ink2); margin:4px 0 18px; font-size:15px; }
+  .grid { display:grid; grid-template-columns: 600px 1fr; gap:22px; align-items:start; }
+  @media (max-width:980px){ .grid{ grid-template-columns:1fr; } .board{ width:min(92vw,600px); height:min(92vw,600px);} }
+  .players { display:flex; justify-content:space-between; margin-bottom:8px; font-weight:600; }
+  .tag { display:inline-flex; align-items:center; gap:8px; }
+  .dot { width:12px; height:12px; border-radius:50%; display:inline-block; }
+  .board { width:600px; height:600px; display:grid; grid-template-columns:repeat(8,1fr); grid-template-rows:repeat(8,1fr); border-radius:10px; overflow:hidden;
+    box-shadow:0 10px 40px rgba(0,0,0,.45); }
+  .sq { position:relative; display:flex; align-items:center; justify-content:center; font-size:56px; line-height:1;
+    user-select:none; font-family:"DejaVu Sans","Noto Sans Symbols 2","Segoe UI Symbol",sans-serif; }
+  .sq.l { background:var(--light); } .sq.d { background:var(--dark); }
+  .sq.hl::after { content:""; position:absolute; inset:0; background:var(--hl); opacity:.42; }
+  .sq.chk { box-shadow: inset 0 0 0 5px var(--chk); background-image: radial-gradient(circle, rgba(229,72,77,.55), transparent 70%); }
+  .pc { position:relative; z-index:1; }
+  .pc.w { color:#fff; text-shadow:0 0 2px #000,0 0 2px #000,0 2px 3px rgba(0,0,0,.6); }
+  .pc.b { color:#14161b; text-shadow:0 1px 1px rgba(255,255,255,.25); }
+  .coord { position:absolute; font-size:11px; font-weight:700; opacity:.6; color:#2b2016; }
+  .coord.f { right:4px; bottom:2px; } .coord.r { left:4px; top:2px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px; margin-bottom:14px; }
+  .label { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.6px; margin-bottom:6px; }
+  .who { font-weight:700; font-size:17px; }
+  .move { font-size:34px; font-weight:800; margin:4px 0 2px; letter-spacing:-.5px; }
+  .desc { color:var(--ink2); min-height:22px; }
+  .bar { height:10px; border-radius:5px; background:#262b36; overflow:hidden; margin:8px 0 4px; }
+  .bar > div { height:100%; border-radius:5px; background:var(--bar); transition:width .25s; }
+  .alt { display:grid; grid-template-columns:62px 1fr 44px; gap:8px; align-items:center; font-size:13px; margin:6px 0; color:var(--ink2); }
+  .alt .t { height:8px; background:#262b36; border-radius:4px; overflow:hidden; } .alt .t > div { height:100%; background:#4b5367; }
+  .alt .v { text-align:right; font-variant-numeric:tabular-nums; }
+  .mat { display:flex; height:10px; border-radius:5px; overflow:hidden; margin:8px 0 4px; }
+  .mat .w { background:#f2f3f7; } .mat .b { background:#3a4050; }
+  .moves { max-height:150px; overflow:auto; font:13px/1.7 ui-monospace,Menlo,monospace; color:var(--ink2); }
+  .moves span { padding:1px 4px; border-radius:4px; } .moves .cur { background:var(--hl); color:#111; font-weight:700; }
+  .ctrls { display:flex; gap:8px; align-items:center; margin-top:14px; flex-wrap:wrap; }
+  button { background:var(--panel); color:var(--ink); border:1px solid var(--line); border-radius:8px; padding:7px 12px; font:inherit; cursor:pointer; }
+  input[type=range] { flex:1; min-width:160px; accent-color:var(--naluri); }
+  .end { position:fixed; inset:0; z-index:10; display:none; align-items:center; justify-content:center; background:rgba(8,9,12,.78); }
+  .end .box { background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:34px 44px; text-align:center; }
+  .end .big { font-size:46px; font-weight:800; } .end .small { color:var(--ink2); margin-top:8px; font-size:16px; }
+  .foot { color:var(--muted); font-size:12px; margin-top:10px; }
+  body.rec .ctrls { display:none; }
+  body.rec { min-height:100vh; display:flex; align-items:center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Naluri vs Laya: System One chess ♟️</h1>
+  <div class="sub">Neither model was trained on chess. Every move is a <b>choice</b> question over the legal moves,
+    described in plain English. Showcase game, the best of 8 played.</div>
+  <div class="grid">
+    <div>
+      <div class="players">
+        <span class="tag"><span class="dot" style="background:#fff"></span><span style="color:var(--naluri)" id="wName"></span></span>
+        <span class="tag"><span style="color:var(--laya)" id="bName"></span><span class="dot" style="background:#14161b;border:1px solid #555"></span></span>
+      </div>
+      <div class="board" id="board"></div>
+      <div class="ctrls">
+        <button id="first">⏮</button><button id="prev">◀</button><button id="play">▶ Play</button>
+        <button id="next">▶</button><button id="last">⏭</button>
+        <input type="range" id="slider" min="0" value="0">
+        <select id="speed"><option value="1400">slow</option><option value="800" selected>normal</option><option value="400">fast</option></select>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="label" id="moveNo">Start</div>
+        <div class="who" id="who">Press play</div>
+        <div class="move" id="san">&nbsp;</div>
+        <div class="desc" id="desc"></div>
+        <div class="bar"><div id="conf" style="width:0"></div></div>
+        <div class="foot" id="confText"></div>
+      </div>
+      <div class="card">
+        <div class="label">Also considered</div>
+        <div id="alts"><div class="foot">–</div></div>
+      </div>
+      <div class="card">
+        <div class="label">Material <span id="matText" style="float:right;text-transform:none"></span></div>
+        <div class="mat"><div class="w" id="matW" style="width:50%"></div><div class="b" id="matB" style="width:50%"></div></div>
+        <div class="label" style="margin-top:12px">Moves</div>
+        <div class="moves" id="moves"></div>
+      </div>
+    </div>
+  </div>
+  <div class="foot">Naluri: github.com/jerichosiahaya/naluri · Laya: convaiinnovations/laya · move = model's pick in its final
+    round (positions with many legal moves use a knockout of 12-move groups)</div>
+</div>
+<div class="end" id="end"><div class="box"><div class="big" id="endBig"></div><div class="small" id="endSmall"></div></div></div>
+
+<script>
+const DATA = /*DATA*/null;
+const P = { K:"♚", Q:"♛", R:"♜", B:"♝", N:"♞", P:"♟" };
+const params = new URLSearchParams(location.search);
+const $ = (id) => document.getElementById(id);
+let i = 0, timer = null;
+
+function fenBoard(fen) {
+  return fen.split(" ")[0].split("/").map((row) => {
+    const out = [];
+    for (const ch of row) { if (/\d/.test(ch)) for (let k = 0; k < +ch; k++) out.push(null); else out.push(ch); }
+    return out;
+  });
+}
+function sqName(r, c) { return "abcdefgh"[c] + (8 - r); }
+
+function drawBoard(fen, uci, check, color) {
+  const rows = fenBoard(fen), hl = uci ? [uci.slice(0, 2), uci.slice(2, 4)] : [];
+  const kingToMove = check ? (color === "white" ? "K" : "k") : null;  // the side to move is the one in check
+  const b = $("board"); b.replaceChildren();
+  rows.forEach((row, r) => row.forEach((p, c) => {
+    const d = document.createElement("div");
+    d.className = "sq " + ((r + c) % 2 ? "d" : "l") + (hl.includes(sqName(r, c)) ? " hl" : "") + (p && p === kingToMove ? " chk" : "");
+    if (p) { const s = document.createElement("span"); s.className = "pc " + (p === p.toUpperCase() ? "w" : "b"); s.textContent = P[p.toUpperCase()]; d.append(s); }
+    if (c === 7) { const s = document.createElement("span"); s.className = "coord r"; s.style.left = "auto"; s.style.right = "4px"; s.textContent = 8 - r; d.append(s); }
+    if (r === 7) { const s = document.createElement("span"); s.className = "coord f"; s.style.right = "auto"; s.style.left = "4px"; s.textContent = "abcdefgh"[c]; d.append(s); }
+    b.append(d);
+  }));
+}
+
+function show(k) {
+  i = Math.max(0, Math.min(k, DATA.moves.length));
+  $("slider").value = i;
+  if (i === 0) {
+    drawBoard(DATA.start_fen, null, false, null);
+    $("moveNo").textContent = "Start"; $("who").textContent = "Naluri plays White"; $("san").innerHTML = "&nbsp;";
+    $("desc").textContent = ""; $("conf").style.width = "0"; $("confText").textContent = "";
+    $("alts").innerHTML = '<div class="foot">–</div>'; setMat({ white: 39, black: 39 }); renderMoves(); return;
+  }
+  const m = DATA.moves[i - 1];
+  drawBoard(m.fen, m.uci, m.check, m.color === "white" ? "black" : "white");
+  $("moveNo").textContent = `Move ${Math.ceil(m.ply / 2)} · ${m.color}`;
+  $("who").innerHTML = `<span style="color:${m.player.startsWith("Naluri") ? "var(--naluri)" : "var(--laya)"}">${m.player.split(" (")[0]}</span> plays`;
+  $("san").textContent = m.san;
+  $("desc").textContent = m.desc;
+  $("conf").style.width = `${(m.prob * 100).toFixed(0)}%`;
+  $("conf").style.background = m.player.startsWith("Naluri") ? "var(--naluri)" : "var(--laya)";
+  $("confText").textContent = `confidence ${m.prob.toFixed(2)} · ${m.legal} legal moves · ${m.ms} ms`;
+  $("alts").replaceChildren(...(m.alternatives.length ? m.alternatives : [{ san: "–", desc: "only move", prob: 0 }]).map((a) => {
+    const row = document.createElement("div"); row.className = "alt";
+    row.innerHTML = `<span><b>${a.san}</b></span><div class="t"><div style="width:${(a.prob * 100).toFixed(0)}%"></div></div><span class="v">${a.prob.toFixed(2)}</span>`;
+    row.title = a.desc; return row;
+  }));
+  setMat(m.material); renderMoves();
+  if (i === DATA.moves.length && params.has("record")) setTimeout(showEnd, 900);
+}
+
+function setMat(mt) {
+  const t = mt.white + mt.black || 1;
+  $("matW").style.width = `${(mt.white / t) * 100}%`; $("matB").style.width = `${(mt.black / t) * 100}%`;
+  $("matText").textContent = `white ${mt.white} · black ${mt.black}`;
+}
+
+function renderMoves() {
+  const box = $("moves"); box.replaceChildren();
+  DATA.moves.forEach((m, k) => {
+    if (m.color === "white") box.append(document.createTextNode(`${Math.ceil(m.ply / 2)}. `));
+    const s = document.createElement("span"); s.textContent = m.san; if (k === i - 1) s.className = "cur";
+    s.onclick = () => { stop(); show(k + 1); }; box.append(s, document.createTextNode(" "));
+  });
+  const cur = box.querySelector(".cur"); if (cur) cur.scrollIntoView({ block: "nearest" });
+}
+
+function showEnd() {
+  const winner = DATA.result === "1-0" ? DATA.white.split(" (")[0] : DATA.result === "0-1" ? DATA.black.split(" (")[0] : null;
+  $("endBig").textContent = winner ? `${winner} wins` : "Draw";
+  $("endSmall").textContent = `${DATA.result} · ${DATA.termination.replace("_", " ")} · ${Math.ceil(DATA.moves.length / 2)} moves`;
+  $("end").style.display = "flex";
+}
+
+function play() {
+  if (timer) return stop();
+  if (i >= DATA.moves.length) show(0);
+  $("play").textContent = "⏸ Pause";
+  const step = () => { if (i >= DATA.moves.length) return stop(); show(i + 1); timer = setTimeout(step, +$("speed").value); };
+  timer = setTimeout(step, +$("speed").value);
+}
+function stop() { clearTimeout(timer); timer = null; $("play").textContent = "▶ Play"; }
+
+$("wName").textContent = DATA.white + " · White"; $("bName").textContent = "Black · " + DATA.black;
+$("slider").max = DATA.moves.length;
+$("slider").oninput = (e) => { stop(); show(+e.target.value); };
+$("first").onclick = () => { stop(); show(0); }; $("last").onclick = () => { stop(); show(DATA.moves.length); };
+$("prev").onclick = () => { stop(); show(i - 1); }; $("next").onclick = () => { stop(); show(i + 1); };
+$("play").onclick = play;
+$("end").onclick = () => { $("end").style.display = "none"; };
+show(0);
+if (params.has("record")) {
+  document.body.classList.add("rec");
+  if (params.get("speed")) $("speed").innerHTML = `<option value="${params.get("speed")}">rec</option>`;
+  setTimeout(play, 1200);
+}
+</script>
+</body>
+</html>
