@@ -9,5 +9,6 @@ dependencies = [
     "sentencepiece>=0.2.2",
     "torch>=2.14.0",
     "tqdm>=4.70.1",
+    "trackio>=0.42.0",
     "transformers>=5.17.0",
 ]

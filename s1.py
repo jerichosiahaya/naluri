@@ -106,7 +106,7 @@ def load(path, device="cuda"):
     return tok, model.float().to(device).eval()
 
 
-def from_pretrained(repo_id="jerichosiahaya/naluri-xlmr-base", device="cpu"):
+def from_pretrained(repo_id="jerichosiahaya/Naluri-279M-encoder", device="cpu"):
     """Download a published Naluri model from the Hugging Face Hub and load it."""
     from huggingface_hub import snapshot_download
     return load(snapshot_download(repo_id), device=device)

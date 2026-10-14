@@ -9,12 +9,12 @@ app_file: app.py
 pinned: false
 license: cc-by-nc-4.0
 models:
-  - jerichosiahaya/naluri-xlmr-base
+  - jerichosiahaya/Naluri-279M-encoder
 short_description: Typed yes/no, choice and score decisions in one pass
 ---
 
 # Naluri demo
 
-Ask [Naluri](https://huggingface.co/jerichosiahaya/naluri-xlmr-base) typed questions (yes/no, pick one, or an ordered
+Ask [Naluri](https://huggingface.co/jerichosiahaya/Naluri-279M-encoder) typed questions (yes/no, pick one, or an ordered
 score) about any text or JSON state and get a probability per option. Code and full report:
 [github.com/jerichosiahaya/naluri](https://github.com/jerichosiahaya/naluri).

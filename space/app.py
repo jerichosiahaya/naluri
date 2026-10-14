@@ -7,7 +7,7 @@ import gradio as gr
 import torch
 from huggingface_hub import hf_hub_download
 
-REPO = "jerichosiahaya/naluri-xlmr-base"
+REPO = "jerichosiahaya/Naluri-279M-encoder"
 torch.set_num_threads(2)  # free CPU Spaces have 2 vCPUs
 
 spec = importlib.util.spec_from_file_location("naluri", hf_hub_download(REPO, "naluri.py"))

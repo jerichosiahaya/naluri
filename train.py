@@ -14,6 +14,8 @@ from pathlib import Path
 
 import torch
 import torch.nn.functional as F
+from torch import nn
+import trackio
 from tqdm import tqdm
 from transformers import AutoTokenizer
 
@@ -24,6 +26,7 @@ ap = argparse.ArgumentParser()
 ap.add_argument("--name", required=True, help="e.g. naluri-xlmr-base-m2")
 ap.add_argument("--base", default=BASE)
 ap.add_argument("--epochs", type=int, default=1)
+ap.add_argument("--patience", type=int, help="stop after this many epochs without a gen-dev gain (needs gen_dev.jsonl)")
 ap.add_argument("--max-len", type=int, default=256)
 ap.add_argument("--tokens-per-batch", type=int, default=6144)
 ap.add_argument("--lr-encoder", type=float, default=2e-5)
@@ -36,8 +39,12 @@ ap.add_argument("--boost", nargs="*", default=[], help="extra task weight on top
 ap.add_argument("--empty-frac", type=float, default=0.0,
                 help="add this fraction of training questions again with an EMPTY state and a uniform target, so the "
                      "model learns 'no evidence -> no preference' instead of answering from option wording alone")
+ap.add_argument("--lora", type=int, default=0,
+                help="LoRA rank: freeze the encoder and train low-rank updates on its attention query/value "
+                     "(plus the head). Wants a higher --lr-encoder, around 2e-4. Merged into the weights on save.")
 args = ap.parse_args()
 OUT = HERE / "runs" / args.name
+trackio.init(project="naluri", name=args.name, config=vars(args))  # dashboard: trackio show
 random.seed(args.seed)
 torch.manual_seed(args.seed)
 
@@ -125,6 +132,36 @@ def report(tag, preds):
     print(f"{tag}: val acc {accuracy(preds):.3f}, macro {macro(preds):.3f}  ({per})")
 
 
+class LoRA(nn.Module):
+    """A frozen Linear plus a trainable low-rank update: W x + (alpha / r) * B A x, with alpha = 2r."""
+
+    def __init__(self, base, r):
+        super().__init__()
+        self.base = base
+        self.A = nn.Parameter(torch.empty(r, base.in_features))
+        self.B = nn.Parameter(torch.zeros(base.out_features, r))  # zero, so training starts from the base model
+        nn.init.kaiming_uniform_(self.A, a=math.sqrt(5))
+
+    def forward(self, x):
+        return self.base(x) + 2.0 * F.linear(F.linear(x, self.A), self.B)
+
+    def merge(self):
+        self.base.weight.data += 2.0 * self.B.data @ self.A.data
+        return self.base
+
+
+def add_lora(encoder, r):
+    # ponytail: matches BERT-style "query"/"value" names (XLM-R); other backbones (mmBERT: Wqkv) need their own names
+    encoder.requires_grad_(False)
+    n = 0
+    for parent in list(encoder.modules()):
+        for name in ("query", "value"):
+            if isinstance(getattr(parent, name, None), nn.Linear):
+                setattr(parent, name, LoRA(getattr(parent, name), r))
+                n += 1
+    assert n, "no query/value Linear layers found to attach LoRA to"
+
+
 t0 = time.time()
 DATA = HERE / args.data
 train_items, val_items = encode(DATA / "train.jsonl", args.empty_frac), encode(DATA / "val.jsonl")
@@ -138,9 +175,14 @@ if args.init:  # encoder weights came from the run dir; restore its scorer too
     model.scorer.load_state_dict(torch.load(Path(args.init) / "scorer.pt", map_location="cpu"))
     tok = AutoTokenizer.from_pretrained(args.init)
 model.encoder.gradient_checkpointing_enable(gradient_checkpointing_kwargs={"use_reentrant": False})
+if args.lora:
+    add_lora(model.encoder, args.lora)
 model.to(device).train()
-opt = torch.optim.AdamW([{"params": model.encoder.parameters(), "lr": args.lr_encoder},
-                         {"params": model.scorer.parameters(), "lr": args.lr_head}], weight_decay=0.01)
+trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
+print(f"trainable parameters: {trainable / 1e6:.2f}M of {sum(p.numel() for p in model.parameters()) / 1e6:.1f}M")
+opt = torch.optim.AdamW([{"params": [p for p in model.encoder.parameters() if p.requires_grad], "lr": args.lr_encoder},
+                         {"params": model.scorer.parameters(), "lr": args.lr_head}], weight_decay=0.01,
+                        fused=True)  # no param-sized foreach temporaries: fits 300M+ encoders in 8 GB
 steps = len(batches(train_items, shuffle=False)) * args.epochs
 warmup = max(1, int(0.06 * steps))
 sched = torch.optim.lr_scheduler.LambdaLR(
@@ -173,15 +215,23 @@ for epoch in range(args.epochs):
         total += loss.item()
         step += 1
         bar.set_postfix(loss=f"{total / i:.4f}")
-    report(f"epoch {epoch + 1}", val_logits(model, val_items, device))
+        if step % 50 == 0:
+            trackio.log({"loss": total / i, "lr": sched.get_last_lr()[0]}, step=step)
+    val = val_logits(model, val_items, device)
+    report(f"epoch {epoch + 1}", val)
+    trackio.log({"epoch": epoch + 1, "val_macro": macro(val)}, step=step)
     if gen_items:
         gen = val_logits(model, gen_items, device)
         report(f"epoch {epoch + 1} (gen-dev)", gen)
         score = macro(gen)
+        trackio.log({"gen_dev_macro": score}, step=step)
         if score > best_score:  # keep the most general epoch
             best_score, best_epoch = score, epoch + 1
             OUT.mkdir(parents=True, exist_ok=True)
             torch.save(model.state_dict(), BEST)
+        elif args.patience and epoch + 1 - best_epoch >= args.patience:
+            print(f"no gen-dev gain for {args.patience} epoch(s), stopping")
+            break
 
 if BEST.exists():
     model.load_state_dict(torch.load(BEST, map_location=device))
@@ -216,6 +266,18 @@ temps = [fit_temp([(z, it["gold"]) for it, z in preds if it["qtype"] == t]) for 
 print("temperatures (choice, score, noul):", [round(t, 3) for t in temps])
 model.temperature.copy_(torch.tensor(temps))
 
+if args.lora:  # fold the updates into the weights, so the saved run loads like any other
+    # checked in fp32: bf16 rounds the merged weights differently from base + update, which is not a merge bug
+    probe = {k: v.to(device) for k, v in collate(batches(val_items, shuffle=False)[0], tok.pad_token_id).items()}
+    model.eval()
+    with torch.no_grad():
+        before = model(**probe)
+        for parent in list(model.encoder.modules()):
+            for name, child in list(parent.named_children()):
+                if isinstance(child, LoRA):
+                    setattr(parent, name, child.merge())
+        assert torch.allclose(before, model(**probe), atol=1e-2), "LoRA merge changed the outputs"
+
 OUT.mkdir(parents=True, exist_ok=True)
 model.encoder.save_pretrained(OUT)
 tok.save_pretrained(OUT)
@@ -225,3 +287,4 @@ json.dump(vars(args) | {"train_items": len(train_items), "minutes": round((time.
                         "best_epoch": best_epoch, "gen_dev_acc": round(best_score, 3)},
           open(OUT / "train_args.json", "w"), indent=2)
 print(f"saved -> {OUT}")
+trackio.finish()

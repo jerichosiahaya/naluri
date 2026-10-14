@@ -18,11 +18,11 @@ sentiment  score   How does the customer feel?     happy 0.05 · neutral 0.27 ·
 3 typed questions about text + JSON, answered in one pass (~0.3 s on a laptop CPU)
 ```
 
-*Real output of [`naluri-xlmr-base`](https://huggingface.co/jerichosiahaya/naluri-xlmr-base) (M4). Zero-shot intent routing on your own labels is still hit-and-miss. Fine-tuning on your own labeled examples closes most of the gap: on typed-decisions, 1,080 training cases took an earlier checkpoint from 29% to a tie with Jev (see Results).*
+*Real output of [`Naluri-279M-encoder`](https://huggingface.co/jerichosiahaya/Naluri-279M-encoder) (M4). Zero-shot intent routing on your own labels is still hit-and-miss. Fine-tuning on your own labeled examples closes most of the gap: on typed-decisions, 1,080 training cases took an earlier checkpoint from 29% to a tie with Jev (see Results).*
 
 It speaks the same three question types as TypeSafe Jev and Laya: `noul` (yes/no), `choice` (pick one) and `score` (an ordered scale).
 
-🤗 **Weights:** [jerichosiahaya/naluri-xlmr-base](https://huggingface.co/jerichosiahaya/naluri-xlmr-base) (M4, CC BY-NC 4.0)
+🤗 **Weights:** [jerichosiahaya/Naluri-279M-encoder](https://huggingface.co/jerichosiahaya/Naluri-279M-encoder) (M4, CC BY-NC 4.0)
 
 ## Results at a glance
 
@@ -57,7 +57,7 @@ Load the published model straight from Hugging Face:
 
 ```python
 import s1
-tok, model = s1.from_pretrained("jerichosiahaya/naluri-xlmr-base", device="cpu")   # or "cuda"
+tok, model = s1.from_pretrained("jerichosiahaya/Naluri-279M-encoder", device="cpu")   # or "cuda"
 s1.predict(tok, model, "Pesanan saya belum sampai!", {"urgent": {"type": "noul", "instructions": "Is this urgent?"}}, device="cpu")
 ```
 
@@ -139,7 +139,7 @@ flowchart LR
 | **M5** | from M4 + 10k operational decisions (run logs; next action, outcome, risk) | typed-decisions zero-shot 43.0%, no regressions |
 | M6 | from M5 + 5.5k contrastive minimal pairs + null-evidence training | 47.1%; the answer collapse is broken on 3 of 5 choice questions |
 | **M6-pairs** | ablation: the minimal pairs only | **46.9%, and genuinely reads the state** (empty-state agreement 93% → 52%); **published on Hugging Face** |
-| M7 | + 7.4k targeted pairs | 48.6%, but partly by shifting its default answer (empty-state agreement 76%); available as the experimental [`m7` branch](https://huggingface.co/jerichosiahaya/naluri-xlmr-base/tree/m7) |
+| M7 | + 7.4k targeted pairs | 48.6%, but partly by shifting its default answer (empty-state agreement 76%); available as the experimental [`m7` branch](https://huggingface.co/jerichosiahaya/Naluri-279M-encoder/tree/m7) |
 
 ## Reproduce
 
