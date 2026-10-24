@@ -22,7 +22,7 @@ sentiment  score   How does the customer feel?     happy 0.05 · neutral 0.27 ·
 
 It speaks the same three question types as TypeSafe Jev and Laya: `noul` (yes/no), `choice` (pick one) and `score` (an ordered scale).
 
-🤗 **Weights:** [jerichosiahaya/Naluri-279M-encoder](https://huggingface.co/jerichosiahaya/Naluri-279M-encoder) (M4, CC BY-NC 4.0)
+🤗 **Weights** ([Naluri collection](https://huggingface.co/collections/jerichosiahaya/naluri-6adb113a3f49aca82f5caccb), CC BY-NC 4.0): [Naluri-561M-encoder](https://huggingface.co/jerichosiahaya/Naluri-561M-encoder) (XLM-R large, System One Bench 64.9) · [Naluri-308M-encoder](https://huggingface.co/jerichosiahaya/Naluri-308M-encoder) (mmBERT-base, 61.0) · [Naluri-279M-encoder](https://huggingface.co/jerichosiahaya/Naluri-279M-encoder) (XLM-R base, 50.4; `m9` branch 58.0)
 
 ## Results at a glance
 
@@ -185,9 +185,12 @@ It isn't real chess. When a capture or check was available, Naluri played one 57
 
 ## Roadmap
 
-- Synthetic data with more agent-trace, workflow and policy decisions over structured states, scaled to 20–50k decisions (M4 showed that better use of the current 4.7k isn't enough for typed-decisions)
-- An **mmBERT-base** backbone (8k context), and XLM-R large
-- A `/v1/systemone`-compatible server for side-by-side battles with Jev, Laya and others
+- ~~Synthetic agent-trace, workflow and policy decisions, scaled to 20k~~ Done: M8/M9
+- ~~An mmBERT-base backbone~~ Done: [Naluri-308M-encoder](https://huggingface.co/jerichosiahaya/Naluri-308M-encoder), System One Bench 61.0
+- ~~A `/v1/systemone`-compatible server~~ Done: `serve.py`, used for the System One Bench and S1MB runs
+- ~~XLM-R large~~ Done: [Naluri-561M-encoder](https://huggingface.co/jerichosiahaya/Naluri-561M-encoder), System One Bench 64.9 (trained in 8 GB with frozen embeddings)
+- Multiple seeds and a head ablation (MLP only vs + 2 transformer layers)
+- Start from an NLI-trained checkpoint
 
 ## License
 

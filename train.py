@@ -42,6 +42,8 @@ ap.add_argument("--empty-frac", type=float, default=0.0,
 ap.add_argument("--lora", type=int, default=0,
                 help="LoRA rank: freeze the encoder and train low-rank updates on its attention query/value "
                      "(plus the head). Wants a higher --lr-encoder, around 2e-4. Merged into the weights on save.")
+ap.add_argument("--freeze-embeddings", action="store_true",
+                help="freeze the token embeddings: XLM-R large's 256M embedding rows don't fit Adam states in 8 GB")
 args = ap.parse_args()
 OUT = HERE / "runs" / args.name
 trackio.init(project="naluri", name=args.name, config=vars(args))  # dashboard: trackio show
@@ -177,6 +179,8 @@ if args.init:  # encoder weights came from the run dir; restore its scorer too
 model.encoder.gradient_checkpointing_enable(gradient_checkpointing_kwargs={"use_reentrant": False})
 if args.lora:
     add_lora(model.encoder, args.lora)
+if args.freeze_embeddings:
+    model.encoder.get_input_embeddings().requires_grad_(False)
 model.to(device).train()
 trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
 print(f"trainable parameters: {trainable / 1e6:.2f}M of {sum(p.numel() for p in model.parameters()) / 1e6:.1f}M")
